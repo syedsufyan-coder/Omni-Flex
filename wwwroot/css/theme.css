@@ -1,0 +1,76 @@
+/* FLEX Theme overrides and Bootstrap variable mapping */
+:root{
+  --flex-primary:        #1E40AF;
+  --flex-primary-light:  #3B82F6;
+  --flex-primary-pale:   #EFF6FF;
+  --flex-accent:         #0EA5E9;
+  --flex-surface:        #FFFFFF;
+  --flex-surface-alt:    #F8FAFC;
+  --flex-border:         #E2E8F0;
+  --flex-text-primary:   #0F172A;
+  --flex-text-secondary: #475569;
+  --flex-text-muted:     #94A3B8;
+  --flex-danger:         #EF4444;
+  --flex-success:        #22C55E;
+  --flex-warning:        #F59E0B;
+  --flex-sidebar-bg:     #0F172A;
+  --flex-sidebar-text:   #CBD5E1;
+  --flex-sidebar-hover:  #1E293B;
+  --flex-sidebar-active: #1E40AF;
+
+  /* Bootstrap variable overrides */
+  --bs-primary: var(--flex-primary);
+  --bs-primary-rgb: 30, 64, 175;
+  --bs-link-color: var(--flex-primary);
+  --bs-border-radius: 0.625rem;
+  --bs-border-radius-lg: 1rem;
+  --bs-border-radius-xl: 1.25rem;
+  --bs-font-sans-serif: 'Plus Jakarta Sans', sans-serif;
+  --bs-body-bg: var(--flex-surface-alt);
+  --bs-body-color: var(--flex-text-primary);
+}
+
+/* Buttons */
+.btn-primary{background:var(--flex-primary);border-color:var(--flex-primary);color:#fff;border-radius:10px;box-shadow:0 6px 18px rgba(30,64,175,0.08);transition:all .2s}
+.btn-primary:hover{background:color-mix(in srgb, var(--flex-primary) 80%, black 20%)}
+.btn-outline-primary{border:2px solid var(--flex-primary);color:var(--flex-primary);border-radius:10px}
+.btn-outline-primary:hover{background:var(--flex-primary);color:#fff}
+
+/* Cards */
+.card{border:1px solid var(--flex-border);border-radius:1rem;box-shadow:0 2px 12px rgba(2,6,23,0.06)}
+
+/* Tables */
+.table tbody tr:nth-child(odd){background:var(--flex-primary-pale)}
+
+/* Badges */
+.badge{border-radius:999px}
+
+/* Headings */
+h1,h2,h3,h4,h5,h6{font-family:'Sora',sans-serif}
+
+/* Sidebar nav link overrides */
+.sidebar .nav-link{color:var(--flex-sidebar-text);padding:.7rem 1.2rem;border-radius:.5rem}
+.sidebar .nav-link:hover{background:var(--flex-sidebar-hover);color:#fff}
+.sidebar .nav-link.active{background:var(--flex-sidebar-active);color:#fff}
+
+/* Small helpers */
+.text-muted-75{color:rgba(255,255,255,0.75)}
+
+/* Ripple container */
+.btn{position:relative;overflow:hidden}
+.ripple{position:absolute;border-radius:50%;transform:scale(0);animation:ripple .6s linear;background:rgba(255,255,255,0.4)}
+@keyframes ripple{to{transform:scale(6);opacity:0}}
+
+/* Animated mesh gradient background helper (used by landing/auth) */
+.bg-mesh{background:linear-gradient(120deg,var(--flex-primary),var(--flex-accent),#07113a);background-size:600% 600%;animation:meshShift 12s ease infinite}
+@keyframes meshShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+
+/* Offcanvas/overlay for mobile sidebar */
+.sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1040;display:none}
+body.sidebar-open .sidebar-overlay{display:block}
+
+/* Sidebar open state */
+body.sidebar-open .sidebar{transform:none}
+
+/* Accessibility focus */
+:focus{outline:2px solid var(--flex-primary);outline-offset:2px}

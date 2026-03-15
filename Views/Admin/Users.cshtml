@@ -1,0 +1,127 @@
+@model IEnumerable<OmniFlex.Models.ViewModels.Admin.UserViewModel>
+@{
+    Layout = "_AdminLayout";
+    ViewData["PageTitle"] = "Users";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4>Users</h4>
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+    <i class="bi bi-plus-circle me-2"></i>Add New User
+  </button>
+</div>
+
+@if (ViewData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>Database Error:</strong> @ViewData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="card">
+  <div class="card-body">
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input id="userSearch" class="form-control" placeholder="Search users..." />
+        </div>
+      </div>
+      <div class="col-md-3">
+        <select id="roleFilter" class="form-select">
+          <option value="">All Roles</option>
+          <option value="admin">Admin</option>
+          <option value="instructor">Instructor</option>
+          <option value="student">Student</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <select id="statusFilter" class="form-select">
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+          <option value="pending">Pending</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button id="clearFilters" class="btn btn-outline-secondary w-100">Clear</button>
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table id="usersTable" class="table table-hover">
+        <thead class="table-dark">
+          <tr>
+            <th>#</th>
+            <th class="sortable">Name <i class="bi bi-sort sort-icon ms-1"></i></th>
+            <th>Role</th>
+            <th class="sortable">Email <i class="bi bi-sort sort-icon ms-1"></i></th>
+            <th>Department</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var user in Model)
+          {
+            int index;
+            index = Model.ToList().IndexOf(user) + 1;
+              var roleClass = user.Role switch {
+                  "Instructor" => "bg-primary",
+                  "TA"         => "bg-info text-dark",
+                  "Student"    => "bg-success",
+                  _            => "bg-secondary"
+              };
+              var avatarColor = user.Role switch {
+                  "Instructor" => "#1E40AF",
+                  "TA"         => "#0EA5E9",
+                  "Student"    => "#22C55E",
+                  _            => "#94A3B8"
+              };
+              <tr data-role="@user.Role.ToLower()">
+                  <td>@index</td>
+                  <td>
+                      <div class="d-flex align-items-center gap-2">@user.FullName</div>
+                  </td>
+                  <td><span class="badge @roleClass">@user.Role</span></td>
+                  <td>@user.Email</td>
+                  <td>@user.Department</td>
+                  <td>
+                      <span class="badge @(user.Status == "Active" ? "bg-success" : "bg-secondary")">
+                          @user.Status
+                      </span>
+                  </td>
+                  <td>
+                      <button class="btn btn-sm btn-outline-secondary btn-view-profile"
+                          data-user-id="@user.UserId"
+                          data-user-name="@user.FullName"
+                          data-user-role="@user.Role"
+                          data-user-email="@user.Email"
+                          data-user-dept="@user.Department"
+                          data-user-status="@user.Status"
+                          data-user-initials="@user.Initials"
+                          data-bs-toggle="tooltip" title="View">
+                          <i class="bi bi-eye"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-warning" data-bs-toggle="tooltip" title="Edit"><i class="bi bi-pencil"></i></button>
+                      <button class="btn btn-sm btn-outline-danger btn-delete" data-course-name="@user.FullName" data-bs-toggle="tooltip" title="Delete"><i class="bi bi-trash"></i></button>
+                  </td>
+              </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <nav aria-label="Users pagination">
+      <ul class="pagination justify-content-center">
+        <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+        <li class="page-item"><a class="page-link" href="#">2</a></li>
+        <li class="page-item"><a class="page-link" href="#">Next</a></li>
+      </ul>
+    </nav>
+  </div>
+</div>
+
+@section Scripts {
+  <script src="~/js/admin-users.js" asp-append-version="true"></script>
+}

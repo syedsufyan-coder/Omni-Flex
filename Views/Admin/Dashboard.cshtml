@@ -1,0 +1,151 @@
+@model OmniFlex.Models.ViewModels.Admin.AdminDashboardViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["PageTitle"] = "Dashboard";
+}
+
+<div class="page-header mb-4">
+  <h4 id="greeting" class="mb-1"> <span id="greeting-text">Good Morning</span>, @(Context.Session.GetString("UserName") ?? "Admin User") 👋</h4>
+  <p class="text-muted mb-0">Here's what's happening at FAST-NUCES today.</p>
+  <div class="text-muted small" id="currentDate"></div>
+</div>
+
+@if (ViewData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>Database Error:</strong> @ViewData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="row g-3 mb-4 stats-row">
+  <div class="col-12 col-md-6 col-lg-3">
+    <div class="card stat-card">
+      <div class="card-body d-flex align-items-center justify-content-between">
+        <div>
+          <small class="text-muted">Total Students</small>
+          <div class="stat-number" data-value="@Model.TotalStudents">@Model.TotalStudents.ToString("N0")</div>
+        </div>
+        <div class="icon-square bg-primary text-white"><i class="bi bi-people-fill"></i></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-6 col-lg-3">
+    <div class="card stat-card">
+      <div class="card-body d-flex align-items-center justify-content-between">
+        <div>
+          <small class="text-muted">Active Courses</small>
+          <div class="stat-number" data-value="@Model.ActiveCourses">@Model.ActiveCourses.ToString("N0")</div>
+        </div>
+        <div class="icon-square bg-success text-white"><i class="bi bi-book-fill"></i></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-6 col-lg-3">
+    <div class="card stat-card">
+      <div class="card-body d-flex align-items-center justify-content-between">
+        <div>
+          <small class="text-muted">Instructors</small>
+          <div class="stat-number" data-value="@Model.TotalInstructors">@Model.TotalInstructors.ToString("N0")</div>
+        </div>
+        <div class="icon-square bg-secondary text-white"><i class="bi bi-person-badge-fill"></i></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-6 col-lg-3">
+    <div class="card stat-card">
+      <div class="card-body d-flex align-items-center justify-content-between">
+        <div>
+          <small class="text-muted">Teaching Assistants</small>
+          <div class="stat-number" data-value="@Model.TotalTAs">@Model.TotalTAs.ToString("N0")</div>
+        </div>
+        <div class="icon-square bg-warning text-white"><i class="bi bi-clipboard2-fill"></i></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <div class="row mb-3">
+    <div class="col-lg-7 mb-3">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center"><h6 class="mb-0" style="font-family:Sora">Recent Activity</h6><a href="/admin/announcements" type="button" class="btn btn-outline-dark" role="button">View All</a></div>
+        <div class="card-body" style="max-height:320px;overflow-y:auto">
+          <div class="activity-item d-flex gap-3 align-items-start mb-2">
+            <div class="icon-square bg-primary text-white"><i class="bi bi-book-open"></i></div>
+            <div><div><strong>Course CS-301</strong> Data Structures added</div><div class="small text-muted">2h ago</div></div>
+          </div>
+          <div class="activity-item d-flex gap-3 align-items-start mb-2">
+            <div class="icon-square bg-success text-white"><i class="bi bi-person-badge"></i></div>
+            <div><div><strong>Dr. Ali Khan</strong> assigned to CS-101 Section B</div><div class="small text-muted">5h ago</div></div>
+          </div>
+          <div class="activity-item d-flex gap-3 align-items-start mb-2">
+            <div class="icon-square bg-warning text-white"><i class="bi bi-arrow-left-right"></i></div>
+            <div><div>Student <strong>21L-1234</strong> transferred to Section A</div><div class="small text-muted">1d ago</div></div>
+          </div>
+          <div class="activity-item d-flex gap-3 align-items-start mb-2">
+            <div class="icon-square bg-primary text-white"><i class="bi bi-megaphone"></i></div>
+            <div><div>Announcement posted: <strong>Mid Exam Schedule</strong></div><div class="small text-muted">1d ago</div></div>
+          </div>
+          <div class="activity-item d-flex gap-3 align-items-start mb-2">
+            <div class="icon-square bg-secondary text-white"><i class="bi bi-person-x"></i></div>
+            <div><div>Instructor removed from <strong>CS-201 Section C</strong></div><div class="small text-muted">2d ago</div></div>
+          </div>
+          <div class="activity-item d-flex gap-3 align-items-start">
+            <div class="icon-square bg-success text-white"><i class="bi bi-person-plus"></i></div>
+            <div><div>New TA registered: <strong>Sara Ahmed</strong></div><div class="small text-muted">3d ago</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-5 mb-3">
+      <div class="card">
+        <div class="card-header"><h6 class="mb-0" style="font-family:Sora">Quick Actions</h6></div>
+        <div class="card-body d-grid gap-2">
+          <a href="/admin/courses/add" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Add New Course</a>
+          <a href="/admin/users" class="btn btn-primary"><i class="bi bi-person-plus me-2"></i>Add New User</a>
+          <a href="/admin/sections/assign" class="btn btn-outline-primary"><i class="bi bi-diagram-3 me-2"></i>Assign Instructor to Section</a>
+          <a href="/admin/sections/transfer" class="btn btn-outline-primary"><i class="bi bi-arrow-left-right me-2"></i>Transfer Student</a>
+          <a href="/admin/reports" class="btn btn-outline-secondary"><i class="bi bi-bar-chart me-2"></i>View Reports</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center"><h6 class="mb-0" style="font-family:Sora">Courses Overview</h6><a href="/admin/courses" type="button" class="btn btn-outline-dark" role="button">View All Courses →</a></div>
+    <div class="card-body table-responsive">
+      <table id="coursesTable" class="table courses-table table-hover">
+        <thead class="table-dark">
+          <tr>
+            <th>#</th>
+            <th class="sortable">Course Code <i class="bi bi-sort sort-icon ms-1"></i></th>
+            <th class="sortable">Course Name <i class="bi bi-sort sort-icon ms-1"></i></th>
+            <th class="sortable">Instructor <i class="bi bi-sort sort-icon ms-1"></i></th>
+            <th>Department</th>
+            <th class="sortable">Enrolled / Seats <i class="bi bi-sort sort-icon ms-1"></i></th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var course in Model.CoursesSummary)
+          {
+              <tr>
+                  <td></td>
+                  <td>@course.CourseId</td>
+                  <td>@course.CourseName</td>
+                  <td>@course.Instructor</td>
+                  <td>@course.Department</td>
+                  <td>@course.Enrolled / @course.Seats</td>
+                  <td><span class="badge @(course.Status == "Active" ? "bg-success" : "bg-warning text-dark")">@course.Status</span></td>
+                  <td><button class="btn btn-sm btn-light" data-bs-toggle="tooltip" title="View"><i class="bi bi-eye"></i></button> <button class="btn btn-sm btn-light" data-bs-toggle="tooltip" title="Edit"><i class="bi bi-pencil"></i></button> <button class="btn btn-sm btn-light text-danger btn-delete" data-course-name="@course.CourseName"><i class="bi bi-trash"></i></button></td>
+              </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  @section Scripts {
+      <script src="~/js/admin.js" asp-append-version="true"></script>
+  }

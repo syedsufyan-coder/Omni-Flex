@@ -1,0 +1,107 @@
+/* Auth page styles */
+main.auth {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(-45deg, #1E40AF, #0EA5E9, #0F172A, #3B82F6);
+  background-size: 400% 400%;
+  animation: gradientShift 8s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.auth-card {
+  max-width: 460px;
+  width: 100%;
+  background: white;
+  border-radius: 1.25rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  animation: zoomIn 1s ease-out;
+}
+
+@keyframes zoomIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.auth-card .card-body {
+  padding: 2.5rem;
+}
+
+.mb-3 {
+  margin-bottom: 1.25rem !important;
+}
+
+.form-label {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.form-control {
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+}
+
+.btn-primary {
+  margin-top: 1.5rem;
+}
+
+.auth-back a, .text-muted {
+  margin-top: 1rem;
+}
+
+.auth-card .card-body {
+  padding: 2rem;
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.auth-brand svg {
+  width: 36px;
+  height: 36px;
+}
+
+.auth-brand h5 {
+  margin: 0;
+  font-family: 'Sora', sans-serif;
+}
+
+.role-badge {
+  display: block;
+  margin-top: 4px;
+}
+
+.form-label {
+  font-weight: 500;
+}
+
+.input-group .btn {
+  border-left: 0;
+}
+
+.input-group .btn:focus {
+  box-shadow: none;
+}
+
+.btn-primary {
+  border-radius: 50px;
+}
+
+.auth-back a {
+  color: rgba(255, 255, 255, 0.5);
+  text-decoration: none;
+}
+
+.auth-back a:hover {
+  color: rgba(255, 255, 255, 0.7);
+}

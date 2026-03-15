@@ -1,0 +1,76 @@
+@{
+    Layout = "_AdminLayout";
+    ViewData["PageTitle"] = "Reports";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4>Reports & Analytics</h4>
+  <div class="d-flex gap-2">
+    <select id="reportPeriod" class="form-select" style="width: auto;">
+      <option value="week">This Week</option>
+      <option value="month" selected>This Month</option>
+      <option value="quarter">This Quarter</option>
+      <option value="year">This Year</option>
+    </select>
+    <button class="btn btn-outline-primary" onclick="exportReport()">
+      <i class="bi bi-download me-2"></i>Export
+    </button>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body text-center">
+        <div class="stat-icon bg-primary text-white mx-auto mb-2" style="width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+          <i class="bi bi-people-fill fs-4"></i>
+        </div>
+        <h3 class="mb-0">1,247</h3>
+        <p class="text-muted mb-0">Total Users</p>
+        <small class="text-success"><i class="bi bi-arrow-up"></i> +12% from last month</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body text-center">
+        <div class="stat-icon bg-success text-white mx-auto mb-2" style="width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+          <i class="bi bi-book-fill fs-4"></i>
+        </div>
+        <h3 class="mb-0">89</h3>
+        <p class="text-muted mb-0">Active Courses</p>
+        <small class="text-success"><i class="bi bi-arrow-up"></i> +5% from last month</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body text-center">
+        <div class="stat-icon bg-info text-white mx-auto mb-2" style="width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+          <i class="bi bi-graph-up fs-4"></i>
+        </div>
+        <h3 class="mb-0">94.2%</h3>
+        <p class="text-muted mb-0">Avg. Completion</p>
+        <small class="text-success"><i class="bi bi-arrow-up"></i> +2.1% from last month</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body text-center">
+        <div class="stat-icon bg-warning text-white mx-auto mb-2" style="width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+          <i class="bi bi-clock fs-4"></i>
+        </div>
+        <h3 class="mb-0">2.4h</h3>
+        <p class="text-muted mb-0">Avg. Study Time</p>
+        <small class="text-danger"><i class="bi bi-arrow-down"></i> -0.3h from last month</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="text-muted">Charts and detailed reports will load here. Connect to Chart.js or similar library for visualization.</p>
+
+@section Scripts {
+  <script src="~/js/admin-reports.js" asp-append-version="true"></script>
+}

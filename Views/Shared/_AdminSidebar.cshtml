@@ -1,0 +1,34 @@
+<nav class="d-flex flex-column h-100">
+  <div class="mb-3 d-flex align-items-center gap-2">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" fill="#fff"/></svg>
+    <div>
+      <div style="font-family:Sora;color:#fff">OMNI-FLEX</div>
+      <!-- <small style="font-family:Sora;color:#fff">/*@(Context.Session.GetString("Role") ?? "User")*/</small> -->
+    </div>
+  </div>
+
+  <div class="d-flex align-items-center gap-2 mb-3">
+    <div class="avatar" style="width:40px;height:40px;border-radius:50%;background:#0EA5E9;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;">@(Context.Session.GetString("UserName")?.Split(' ')[0][0] ?? 'A')</div>
+    <div>
+      <div class="text-white" style="font-family:Sora">@(Context.Session.GetString("UserName") ?? "Admin User")</div>
+      <div><span class="badge bg-primary">@(Context.Session.GetString("Role") ?? "Administrator")</span></div>
+    </div>
+  </div>
+
+  <ul class="nav nav-pills flex-column mb-auto">
+    <li class="nav-item"><a class="nav-link" href="/admin/dashboard"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+    <li class="nav-item"><a class="nav-link" href="/admin/courses"><i class="bi bi-book-open me-2"></i>Courses</a></li>
+    <li class="nav-item"><a class="nav-link" href="/admin/sections"><i class="bi bi-layout-split me-2"></i>Sections</a></li>
+    <li class="nav-item"><a class="nav-link" href="/admin/users"><i class="bi bi-people me-2"></i>All Users</a></li>
+    <li class="nav-item"><a class="nav-link" href="/admin/users?filter=instructor"><i class="bi bi-person-badge me-2"></i>Instructors</a></li>
+    <li class="nav-item"><a class="nav-link" href="/admin/users?filter=ta"><i class="bi bi-clipboard2-check me-2"></i>TAs</a></li>
+    <li class="nav-item"><a class="nav-link" href="/admin/users?filter=student"><i class="bi bi-mortarboard me-2"></i>Students</a></li>
+    <li class="nav-item"><a class="nav-link" href="/admin/announcements"><i class="bi bi-megaphone me-2"></i>Announcements</a></li>
+    <li class="nav-item"><a class="nav-link" href="/admin/reports"><i class="bi bi-bar-chart-line me-2"></i>Reports</a></li>
+    <li class="nav-item"><a class="nav-link" href="/admin/settings"><i class="bi bi-gear me-2"></i>Settings</a></li>
+  </ul>
+
+  <div class="mt-auto">
+    <a href="/auth/logout" class="btn btn-ghost w-100 text-start text-white" style="border:none"><i class="bi bi-box-arrow-left me-2"></i>Logout</a>
+  </div>
+</nav>
