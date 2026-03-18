@@ -120,23 +120,25 @@
             <th>#</th>
             <th class="sortable">Course Code <i class="bi bi-sort sort-icon ms-1"></i></th>
             <th class="sortable">Course Name <i class="bi bi-sort sort-icon ms-1"></i></th>
-            <th class="sortable">Instructor <i class="bi bi-sort sort-icon ms-1"></i></th>
-            <th>Department</th>
-            <th class="sortable">Enrolled / Seats <i class="bi bi-sort sort-icon ms-1"></i></th>
+            <th>Credit Hours</th>
+            <th>Course Type</th>
+            <th>Course Category</th>
             <th>Status</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          @foreach (var course in Model.CoursesSummary)
+          @foreach (CourseViewModel course in Model.Courses)
           {
+              int index;
+              index = Model.Courses.IndexOf(course) + 1;
               <tr>
-                  <td></td>
+                  <td>@index</td>
                   <td>@course.CourseId</td>
                   <td>@course.CourseName</td>
-                  <td>@course.Instructor</td>
-                  <td>@course.Department</td>
-                  <td>@course.Enrolled / @course.Seats</td>
+                  <td>@course.CreditHrs</td>
+                  <td>@course.CourseType</td>
+                  <td>@course.CourseCat</td>
                   <td><span class="badge @(course.Status == "Active" ? "bg-success" : "bg-warning text-dark")">@course.Status</span></td>
                   <td><button class="btn btn-sm btn-light" data-bs-toggle="tooltip" title="View"><i class="bi bi-eye"></i></button> <button class="btn btn-sm btn-light" data-bs-toggle="tooltip" title="Edit"><i class="bi bi-pencil"></i></button> <button class="btn btn-sm btn-light text-danger btn-delete" data-course-name="@course.CourseName"><i class="bi bi-trash"></i></button></td>
               </tr>

@@ -24,10 +24,9 @@
             <th>#</th>
             <th class="sortable">Course Code <i class="bi bi-sort sort-icon ms-1"></i></th>
             <th class="sortable">Course Name <i class="bi bi-sort sort-icon ms-1"></i></th>
-            <th>Department</th>
-            <th>Credit Hrs</th>
-            <th>Enrolled / Max</th>
-            <th>Instructor Assigned</th>
+            <th>Credit Hours</th>
+            <th>Course Type</th>
+            <th>Course Category</th>
             <th>Status</th>
             <th>Actions</th>
           </tr>
@@ -37,26 +36,14 @@
           {
               int index;
               index = Model.ToList().IndexOf(course) + 1;
-              var pct = course.Seats > 0 ? (course.Enrolled * 100 / course.Seats) : 0;
-              var barColor = pct >= 100 ? "bg-danger" : pct >= 80 ? "bg-warning" : "bg-success";
               <tr>
                   <td>@index</td>
                   <td>@course.CourseId</td>
                   <td>@course.CourseName</td>
-                  <td>@course.Department</td>
                   <td>@course.CreditHrs</td>
-                  <td>
-                      <div>@course.Enrolled / @course.Seats</div>
-                      <div class="progress mt-1" style="height:4px">
-                          <div class="progress-bar @barColor" style="width:@pct%"></div>
-                      </div>
-                  </td>
-                  <td>@course.Instructor</td>
-                  <td>
-                      <span class="badge @(course.Status == "Active" ? "bg-success" : course.Status == "Pending" ? "bg-warning text-dark" : "bg-secondary")">
-                          @course.Status
-                      </span>
-                  </td>
+                  <td>@course.CourseType</td>
+                  <td>@course.CourseCat</td>
+                  <td>@course.Status</td>
                   <td>
                       <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip" title="View"><i class="bi bi-eye"></i></button>
                       <button class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" title="Assign Instructor"><i class="bi bi-person-plus"></i></button>

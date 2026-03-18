@@ -1,4 +1,5 @@
 using Dapper;
+using OmniFlex.Models.DTOs;
 using OmniFlex.Infrastructure;
 using OmniFlex.Models.Domain.Admin;
 
@@ -53,6 +54,144 @@ namespace OmniFlex.Models.Repositories.Admin
             return await conn.QueryAsync<Course>(
                 $"SELECT {SELECT_COLUMNS} FROM COURSES WHERE DEPT_ID = :DeptId",
                 new { DeptId = deptId });
+        }
+
+        public async Task<IEnumerable<CourseDto>> GetByDeptWithDetailsAsync(string deptId)
+        {
+            const string sql = @"SELECT
+                        C.COURSE_ID AS CourseId,
+                        C.COURSE_NAME AS CourseName,
+                        C.CREDIT_HRS AS CreditHours,
+                        C.COURSE_TYPE AS CourseType,
+                        C.COURSE_CAT AS CourseCat,
+                        NVL(PRE.COURSE_NAME, 'None') AS PreRequisite
+                    FROM COURSES C
+                    JOIN SECTION_OFFERINGS SO  ON SO.COURSE_ID   = C.COURSE_ID
+                    JOIN SEMESTERS SM          ON SM.SEMESTER_ID = SO.SEMESTER_ID
+                    LEFT JOIN COURSES PRE      ON PRE.COURSE_ID  = C.PRE_REQ_ID
+                    WHERE C.DEPT_ID     = :Dept_id AND SM.IS_CURRENT = 1";
+            
+            using var conn = _factory.CreateConnection();
+            conn.Open();
+
+            return await conn.QueryAsync<CourseDto>(sql, new {Dept_id = deptId});
+        }
+
+        public async Task<IEnumerable<CourseDto>> GetByTeacherWithDetailsAsync(string teacherId)
+        {
+            const string sql = @"SELECT
+                        C.COURSE_ID AS CourseId,
+                        C.COURSE_NAME AS CourseName,
+                        C.CREDIT_HRS AS CreditHours,
+                        C.COURSE_TYPE CourseType,
+                        C.COURSE_CAT AS CourseCat,
+                        NVL(PRE.COURSE_NAME, 'None') AS PreRequisite
+                    FROM COURSES C
+                    JOIN SECTION_OFFERINGS SO  ON SO.COURSE_ID   = C.COURSE_ID
+                    JOIN SEMESTERS SM          ON SM.SEMESTER_ID = SO.SEMESTER_ID
+                    LEFT JOIN COURSES PRE      ON PRE.COURSE_ID  = C.PRE_REQ_ID
+                    WHERE SO.TEACHER_ID  = :Teacher_id AND SM.IS_CURRENT  = 1";
+
+            using var conn = _factory.CreateConnection();
+            conn.Open();
+
+            return await conn.QueryAsync<CourseDto>(sql, new {Teacher_id = teacherId});
+        }
+
+        public async Task<IEnumerable<CourseDto>> GetBySectionWithDetailsAsync(string sectionId)
+        {
+            const string sql = @"SELECT
+                        C.COURSE_ID AS CourseId,
+                        C.COURSE_NAME AS CourseName,
+                        C.CREDIT_HRS AS CreditHours,
+                        C.COURSE_TYPE CourseType,
+                        C.COURSE_CAT AS CourseCat,
+                        NVL(PRE.COURSE_NAME, 'None') AS PreRequisite
+                    FROM COURSES C
+                    JOIN SECTION_OFFERINGS SO  ON SO.COURSE_ID   = C.COURSE_ID
+                    JOIN SEMESTERS SM          ON SM.SEMESTER_ID = SO.SEMESTER_ID
+                    LEFT JOIN COURSES PRE      ON PRE.COURSE_ID  = C.PRE_REQ_ID
+                    WHERE SO.SECTION_ID  = :Section_id AND SM.IS_CURRENT  = 1 ORDER BY C.COURSE_NAME";
+
+            using var conn = _factory.CreateConnection();
+            conn.Open();
+
+            return await conn.QueryAsync<CourseDto>(sql, new {Section_id = sectionId});
+        }
+
+        public async Task<IEnumerable<CourseDto>> GetByCreditsWithDetailsAsync(int creditHrs)
+        {
+            const string sql = @"SELECT
+                        C.COURSE_ID AS CourseId,
+                        C.COURSE_NAME AS CourseName,
+                        C.CREDIT_HRS AS CreditHours,
+                        C.COURSE_TYPE CourseType,
+                        C.COURSE_CAT AS CourseCat,
+                        NVL(PRE.COURSE_NAME, 'None') AS PreRequisite
+                    FROM COURSES C
+                    LEFT JOIN COURSES PRE ON PRE.COURSE_ID = C.PRE_REQ_ID
+                    WHERE C.CREDIT_HRS = :Credit_Hours AND C.IS_ACTIVE  = 1 ORDER BY C.COURSE_NAME";
+
+            using var conn = _factory.CreateConnection();
+            conn.Open();
+
+            return await conn.QueryAsync<CourseDto>(sql, new {Credit_Hours = creditHrs});
+        }
+
+        public async Task<IEnumerable<CourseDto>> GetByCourseTypeWithDetailsAsync(string courseType)
+        {
+            const string sql = @"SELECT
+                        C.COURSE_ID AS CourseId,
+                        C.COURSE_NAME AS CourseName,
+                        C.CREDIT_HRS AS CreditHours,
+                        C.COURSE_TYPE CourseType,
+                        C.COURSE_CAT AS CourseCat,
+                        NVL(PRE.COURSE_NAME, 'None') AS PreRequisite
+                    FROM COURSES C
+                    LEFT JOIN COURSES PRE ON PRE.COURSE_ID = C.PRE_REQ_ID
+                    WHERE C.COURSE_TYPE = :Course_type AND C.IS_ACTIVE = 1 ORDER BY C.COURSE_NAME";
+
+            using var conn = _factory.CreateConnection();
+            conn.Open();
+
+            return await conn.QueryAsync<CourseDto>(sql, new {Course_type = courseType});
+        }
+
+        public async Task<IEnumerable<CourseDto>> GetByCourseCatWithDetailsAsync(string courseCat)
+        {
+            const string sql = @"SELECT
+                        C.COURSE_ID AS CourseId,
+                        C.COURSE_NAME AS CourseName,
+                        C.CREDIT_HRS AS CreditHours,
+                        C.COURSE_TYPE CourseType,
+                        C.COURSE_CAT AS CourseCat,
+                        NVL(PRE.COURSE_NAME, 'None') AS PreRequisite
+                    FROM COURSES C
+                    LEFT JOIN COURSES PRE ON PRE.COURSE_ID = C.PRE_REQ_ID
+                    WHERE C.COURSE_CAT = :Course_cat AND C.IS_ACTIVE = 1 ORDER BY C.COURSE_NAME";
+
+            using var conn = _factory.CreateConnection();
+            conn.Open();
+
+            return await conn.QueryAsync<CourseDto>(sql, new {Course_cat = courseCat});
+        }
+
+        public async Task<IEnumerable<CourseDto>> GetByPreRequisiteWithDetailsAsync(string preRequisiteId)
+        {
+            const string sql = @"SELECT
+                        C.COURSE_ID AS CourseId,
+                        C.COURSE_NAME AS CourseName,
+                        C.CREDIT_HRS AS CreditHours,
+                        C.COURSE_TYPE CourseType,
+                        NVL(PRE.COURSE_NAME, 'None') AS PreRequisite
+                    FROM COURSES C
+                    LEFT JOIN COURSES PRE ON PRE.COURSE_ID = C.PRE_REQ_ID
+                    WHERE C.PRE_REQ_ID = :PreReqId AND C.IS_ACTIVE = 1 ORDER BY C.COURSE_NAME";
+
+            using var conn = _factory.CreateConnection();
+            conn.Open();
+
+            return await conn.QueryAsync<CourseDto>(sql, new {PreReqId = preRequisiteId});
         }
 
         public async Task<int> CreateAsync(Course course)

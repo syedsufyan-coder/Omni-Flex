@@ -8,6 +8,7 @@ namespace OmniFlex.Models.ViewModels.Admin
         public int ActiveCourses { get; set; }
         public List<RecentActivityItem> RecentActivity { get; set; } = new();
         public List<CourseSummaryItem> CoursesSummary { get; set; } = new();
+        public List<CourseViewModel> Courses { get; set; } = new();
     }
 
     public class RecentActivityItem

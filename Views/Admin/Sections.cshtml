@@ -22,13 +22,11 @@
         <thead class="table-dark">
           <tr>
             <th>#</th>
-            <th class="sortable">Section Code <i class="bi bi-sort sort-icon ms-1"></i></th>
-            <th class="sortable">Course <i class="bi bi-sort sort-icon ms-1"></i></th>
-            <th>Instructor</th>
-            <th>Room</th>
-            <th>Schedule</th>
+            <th class="sortable">Section Name <i class="bi bi-sort sort-icon ms-1"></i></th>
+            <th class="sortable">Department <i class="bi bi-sort sort-icon ms-1"></i></th>
+            <th>Class Representative</th>
             <th>Enrolled / Max</th>
-            <th>Status</th>
+            <th>Batch</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -39,21 +37,17 @@
             foreach (var sectionItem in Model)
             {
                 index++;
-                var pct = sectionItem.Seats > 0 ? (sectionItem.Enrolled * 100 / sectionItem.Seats) : 0;
-                var statusClass = pct >= 100 ? "bg-danger" : sectionItem.Instructor == "Unassigned" ? "bg-warning text-dark" : "bg-success";
-                var statusText = pct >= 100 ? "Full" : sectionItem.Instructor == "Unassigned" ? "Pending" : "Active";
+                var pct = sectionItem.Seats > 0 ? (sectionItem.EnrolledStudents * 100 / sectionItem.Seats) : 0;
                 <tr>
                     <td>@index</td>
-                    <td>@sectionItem.SectionId</td>
-                    <td>@sectionItem.SectionLabel</td>
-                    <td>@sectionItem.CourseName</td>
-                    <td>@sectionItem.RoomNo</td>
-                    <td>@sectionItem.TimeSlot</td>
-                    <td>@sectionItem.Enrolled / @sectionItem.Seats</td>
-                    <td><span class="badge @statusClass">@statusText</span></td>
+                    <td>@sectionItem.SectionName</td>
+                    <td>@sectionItem.Department</td>
+                    <td>@sectionItem.CrName</td>
+                    <td>@sectionItem.EnrolledStudents / @sectionItem.Seats</td>
+                    <td>@sectionItem.BatchYear</td>
                     <td>
                         <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip" title="View"><i class="bi bi-eye"></i></button>
-                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" title="Assign Instructor"><i class="bi bi-person-plus"></i></button>
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" title="Edit"><i class="bi bi-pencil"></i></button>
                         <button class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip" title="Transfer Students"><i class="bi bi-arrow-left-right"></i></button>
                         <button class="btn btn-sm btn-outline-danger btn-delete" data-course-name="@sectionItem.SectionId" data-bs-toggle="tooltip" title="Delete"><i class="bi bi-trash"></i></button>
                     </td>
