@@ -35,15 +35,15 @@ namespace OmniFlex.Controllers
             {
                 var vm = new AdminDashboardViewModel
                 {
-                    TotalStudents    = await _users.GetCountByRoleAsync("Student"),
+                    TotalStudents = await _users.GetCountByRoleAsync("Student"),
                     TotalInstructors = await _users.GetCountByRoleAsync("Instructor"),
-                    TotalTAs         = await _users.GetCountByRoleAsync("TA"),
-                    ActiveCourses    = (await _courses.GetActiveAsync())?.Count() ?? 0,
+                    TotalTAs = await _users.GetCountByRoleAsync("TA"),
+                    ActiveCourses = (await _courses.GetActiveAsync())?.Count() ?? 0,
                 };
 
                 // Build CourseSummary list
-                var courses  = await _courses.GetAllAsync();
-                var summary  = new List<CourseViewModel>();
+                var courses = await _courses.GetAllAsync();
+                var summary = new List<CourseViewModel>();
 
                 if (courses != null)
                 {
@@ -52,14 +52,14 @@ namespace OmniFlex.Controllers
                         var sections = await _sections.GetByCourseAsync(c.CourseId);
                         summary.Add(new CourseViewModel
                         {
-                            CourseId   = c.CourseId,
+                            CourseId = c.CourseId,
                             CourseName = c.CourseName,
-                            CreditHrs  = c.CreditHrs,
+                            CreditHrs = c.CreditHrs,
                             CourseType = c.CourseType,
-                            CourseCat  = c.CourseCat,
-                            PreReqId   = c.PreReqId,
-                            IsActive   = c.IsActive == 1,
-                            Status     = c.IsActive == 1 ? "Active" : "Inactive"
+                            CourseCat = c.CourseCat,
+                            PreReqId = c.PreReqId,
+                            IsActive = c.IsActive == 1,
+                            Status = c.IsActive == 1 ? "Active" : "Inactive"
                         });
                     }
                 }
@@ -116,7 +116,7 @@ namespace OmniFlex.Controllers
         {
             try
             {
-                var sections   = await _sections.GetAllDetailedAsync();
+                var sections = await _sections.GetAllDetailedAsync();
                 var viewModels = new List<SectionViewModel>();
 
                 if (sections != null)
@@ -125,14 +125,14 @@ namespace OmniFlex.Controllers
                     {
                         viewModels.Add(new SectionViewModel
                         {
-                            SectionId    = s.SectionId,
+                            SectionId = s.SectionId,
                             SectionName = SectionHelper.GetFormattedSectionLabel(s.Degree, s.SectionLabel, s.Batch) ?? "",
-                            Department   = s.Department ?? "",
-                            EnrolledStudents     = s.EnrolledStudents,
-                            Seats        = 50,
-                            SeatsLeft    = 50 - s.EnrolledStudents,
-                            CrName       = $"{s.CrFirstName} {s.CrLastName}",
-                            BatchYear     = s.Batch
+                            Department = s.Department ?? "",
+                            EnrolledStudents = s.EnrolledStudents,
+                            Seats = 50,
+                            SeatsLeft = 50 - s.EnrolledStudents,
+                            CrName = $"{s.CrFirstName} {s.CrLastName}",
+                            BatchYear = s.Batch
                         });
                     }
                 }

@@ -149,12 +149,12 @@ namespace OmniFlex.Models.Repositories.Admin
                         NVL(PRE.COURSE_NAME, 'None') AS PreRequisite
                     FROM COURSES C
                     LEFT JOIN COURSES PRE ON PRE.COURSE_ID = C.PRE_REQ_ID
-                    WHERE C.COURSE_TYPE = :Course_type AND C.IS_ACTIVE = 1 ORDER BY C.COURSE_NAME";
+                    WHERE C.COURSE_TYPE = :Coursetype AND C.IS_ACTIVE = 1 ORDER BY C.COURSE_NAME";
 
             using var conn = _factory.CreateConnection();
             conn.Open();
 
-            return await conn.QueryAsync<CourseDto>(sql, new {Course_type = courseType});
+            return await conn.QueryAsync<CourseDto>(sql, new {Coursetype = courseType});
         }
 
         public async Task<IEnumerable<CourseDto>> GetByCourseCatWithDetailsAsync(string courseCat)
