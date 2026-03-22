@@ -21,7 +21,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<Result?> GetByStudentAndSectionAsync(string studentId, string sectionId)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.QueryFirstOrDefaultAsync<Result>(
                 $"SELECT {SELECT_COLUMNS} FROM RESULTS WHERE STUDENT_ID = :StudentId AND SECTION_ID = :SectionId",
                 new { StudentId = studentId, SectionId = sectionId });
@@ -30,7 +30,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<IEnumerable<Result>> GetByStudentAsync(string studentId)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.QueryAsync<Result>(
                 $"SELECT {SELECT_COLUMNS} FROM RESULTS WHERE STUDENT_ID = :StudentId",
                 new { StudentId = studentId });
@@ -39,7 +39,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<IEnumerable<Result>> GetBySectionAsync(string sectionId)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.QueryAsync<Result>(
                 $"SELECT {SELECT_COLUMNS} FROM RESULTS WHERE SECTION_ID = :SectionId",
                 new { SectionId = sectionId });
@@ -48,7 +48,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<int> SaveResultAsync(Result result)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.ExecuteAsync(@"
                 INSERT INTO RESULTS (STUDENT_ID, SECTION_ID, FINAL_GRADE, FINAL_PERCENTAGE)
                 VALUES (:StudentId, :SectionId, :FinalGrade, :FinalPercentage)", result);
@@ -57,7 +57,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<int> UpdateGradeAsync(string studentId, string sectionId, string grade, decimal percentage)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.ExecuteAsync(@"
                 UPDATE RESULTS SET FINAL_GRADE = :Grade, FINAL_PERCENTAGE = :Percentage
                 WHERE STUDENT_ID = :StudentId AND SECTION_ID = :SectionId",

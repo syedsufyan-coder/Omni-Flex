@@ -23,7 +23,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<Section?> GetByIdAsync(string sectionId)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.QueryFirstOrDefaultAsync<Section>(
                 $"SELECT {SELECT_COLUMNS} FROM SECTIONS WHERE SECTION_ID = :SectionId",
                 new { SectionId = sectionId });
@@ -32,7 +32,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<IEnumerable<Section>> GetAllAsync()
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.QueryAsync<Section>(
                 $"SELECT {SELECT_COLUMNS} FROM SECTIONS");
         }
@@ -60,7 +60,7 @@ namespace OmniFlex.Models.Repositories.Admin
                         CR.FIRST_NAME, CR.LAST_NAME, D.DEPT_NAME, S.BATCH
                         ORDER BY S.SECTION_ID";
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.QueryAsync<SectionsDto>(sql);
         }
 
@@ -76,7 +76,7 @@ namespace OmniFlex.Models.Repositories.Admin
                 WHERE SO.COURSE_ID = :CourseId 
                 AND SM.IS_CURRENT = 1";
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             // Dapper maps the flat result set directly to the DTO properties
             return await conn.QueryAsync<SectionsDto>(sql, new { CourseId = courseId });
         }
@@ -104,7 +104,7 @@ namespace OmniFlex.Models.Repositories.Admin
                         CR.FIRST_NAME, CR.LAST_NAME, D.DEPT_NAME, S.BATCH
                         ORDER BY S.SECTION_ID";
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.QueryAsync<SectionsDto>(sql, new { CourseId = courseId });
         }
 
@@ -131,7 +131,7 @@ namespace OmniFlex.Models.Repositories.Admin
                         CR.FIRST_NAME, CR.LAST_NAME, D.DEPT_NAME, S.BATCH
                         ORDER BY S.SECTION_ID";
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.QueryAsync<SectionsDto>(sql, new { TeacherId = teacherId });
         }
 
@@ -158,7 +158,7 @@ namespace OmniFlex.Models.Repositories.Admin
                         CR.FIRST_NAME, CR.LAST_NAME, D.DEPT_NAME, S.BATCH
                         ORDER BY S.SECTION_ID";
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.QueryAsync<SectionsDto>(sql, new { DeptId = deptId });
         }
 
@@ -187,7 +187,7 @@ namespace OmniFlex.Models.Repositories.Admin
                         CR.FIRST_NAME, CR.LAST_NAME, D.DEPT_NAME, S.BATCH
                         ORDER BY S.SECTION_ID";
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.QueryAsync<SectionsDto>(sql, new { TaId = taId });
         }
 
@@ -215,14 +215,14 @@ namespace OmniFlex.Models.Repositories.Admin
                         ORDER BY S.SECTION_ID";
 
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.QueryAsync<SectionsDto>(sql, new { SemesterId = semesterId });
         }
 
         public async Task<int> CreateAsync(Section section)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.ExecuteAsync(@"
                 INSERT INTO SECTIONS 
                 (SECTION_ID, COURSE_ID, SEMESTER_ID, TEACHER_ID, SEATS, 
@@ -235,7 +235,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<int> UpdateAsync(Section section)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.ExecuteAsync(@"
                 UPDATE SECTIONS SET 
                 COURSE_ID = :CourseId, SEMESTER_ID = :SemesterId, TEACHER_ID = :TeacherId,
@@ -246,7 +246,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<int> AssignTeacherAsync(string sectionId, string teacherId)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.ExecuteAsync(
                 "UPDATE SECTIONS SET TEACHER_ID = :TeacherId WHERE SECTION_ID = :SectionId",
                 new { SectionId = sectionId, TeacherId = teacherId });
@@ -255,7 +255,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<int> AddTaAsync(string sectionId, string taId)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.ExecuteAsync(@"
                 INSERT INTO SECTION_TAS (SECTION_ID, TA_ID)
                 VALUES (:SectionId, :TaId)",
@@ -265,7 +265,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<int> RemoveTaAsync(string sectionId, string taId)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.ExecuteAsync(
                 "DELETE FROM SECTION_TAS WHERE SECTION_ID = :SectionId AND TA_ID = :TaId",
                 new { SectionId = sectionId, TaId = taId });
@@ -275,7 +275,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<int> GetEnrolledCountAsync(string sectionId)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.ExecuteScalarAsync<int>(
                 "SELECT COUNT(*) FROM ENROLLMENTS WHERE SECTION_ID = :SectionId AND STATUS = 'Registered'",
                 new { SectionId = sectionId });

@@ -4,6 +4,62 @@
     ViewData["PageTitle"] = "Courses";
 }
 
+<!-- Filter Form — Added by Abdur Rehman Khan -->
+<div class="card mb-3">
+    <div class="card-body">
+        <h6 class="card-title mb-3">
+            <i class="bi bi-funnel me-2"></i>Filter Courses
+        </h6>
+
+        <!-- Row 1 — Filter type dropdown -->
+        <div class="d-flex align-items-center gap-3 mb-2">
+            <label class="form-label mb-0" style="min-width:120px;">Filter By</label>
+            <select id="filterType"
+                    class="form-select"
+                    style="max-width:220px;"
+                    onchange="onFilterTypeChange()">
+                <option value="">-- Select a filter --</option>
+                <option value="TeacherId">Teacher</option>
+                <option value="DeptId">Department</option>
+                <option value="CourseType">Course Type</option>
+                <option value="CourseCat">Course Category</option>
+                <option value="SectionId">Section</option>
+                <option value="PreReqId">Pre-Requisite</option>
+                <option value="CreditHrs">Credit Hours</option>
+            </select>
+        </div>
+
+        <!-- Row 2 — Value input, hidden until filter type selected -->
+        <div id="filterValueRow"
+             class="d-flex align-items-center gap-3 mb-2"
+             style="display:none !important;">
+            <label id="filterValueLabel"
+                   class="form-label mb-0"
+                   style="min-width:120px;">Value</label>
+            <input id="filterValue"
+                   type="text"
+                   class="form-control"
+                   style="max-width:220px;"
+                   placeholder="Select a filter first" />
+            <button id="filterBtn"
+                    class="btn btn-primary"
+                    onclick="filterCourses()">
+                <i class="bi bi-search me-1"></i>Search
+            </button>
+            <button class="btn btn-secondary"
+                    onclick="clearFilter()">
+                <i class="bi bi-x-circle me-1"></i>Clear
+            </button>
+        </div>
+
+        <!-- Error message — hidden by default -->
+        <div id="filterError"
+             class="text-danger small mt-1"
+             style="display:none;">
+        </div>
+    </div>
+</div>
+
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h4>Courses</h4>
   <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCourseModal">

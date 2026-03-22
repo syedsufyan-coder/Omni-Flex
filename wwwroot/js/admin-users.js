@@ -21,17 +21,27 @@ document.addEventListener('DOMContentLoaded', function() {
         const statusValue = statusFilter.value.toLowerCase();
         const rows = tbody.querySelectorAll('tr');
 
+        let visibleCount = 0; // counter for visible rows
+
         rows.forEach(row => {
+            const role = row.getAttribute('data-role') || '';
             const name = row.children[1].textContent.toLowerCase();
-            const email = row.children[2].textContent.toLowerCase();
-            const role = row.children[3].textContent.toLowerCase();
-            const status = row.children[5].textContent.toLowerCase();
+            const email = row.children[3].textContent.toLowerCase();
+            const statusBadge = row.children[5].querySelector('[data-status]');
+            const status = statusBadge ? statusBadge.getAttribute('data-status') : '';
 
             const matchesSearch = name.includes(searchTerm) || email.includes(searchTerm);
-            const matchesRole = !roleValue || role.includes(roleValue);
+            const matchesRole = !roleValue || role === roleValue;
             const matchesStatus = !statusValue || status.includes(statusValue);
 
-            row.style.display = (matchesSearch && matchesRole && matchesStatus) ? '' : 'none';
+            if (matchesSearch && matchesRole && matchesStatus) {
+                row.style.display = '';
+                visibleCount++;
+                // Update sr no. dynamically based on visible rows only
+                row.children[0].textContent = visibleCount;
+            } else {
+                row.style.display = 'none';
+            }
         });
     }
 

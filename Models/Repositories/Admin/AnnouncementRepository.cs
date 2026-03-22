@@ -25,7 +25,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<IEnumerable<Announcement>> GetAllSystemWideAsync()
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.QueryAsync<Announcement>(
                 $"SELECT {SELECT_COLUMNS} FROM ANNOUNCEMENTS WHERE SECTION_ID IS NULL ORDER BY POST_DATE DESC");
         }
@@ -33,7 +33,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<IEnumerable<Announcement>> GetBySectionAsync(string sectionId)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.QueryAsync<Announcement>(
                 $"SELECT {SELECT_COLUMNS} FROM ANNOUNCEMENTS WHERE SECTION_ID = :SectionId ORDER BY POST_DATE DESC",
                 new { SectionId = sectionId });
@@ -42,7 +42,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<int> CreateAsync(Announcement announcement)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.ExecuteAsync(@"
                 INSERT INTO ANNOUNCEMENTS 
                 (ANNOUNCEMENT_ID, POSTED_BY, SECTION_ID, TITLE, CONTENT, 
@@ -55,7 +55,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<int> DeleteAsync(string announcementId)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.ExecuteAsync(
                 "DELETE FROM ANNOUNCEMENTS WHERE ANNOUNCEMENT_ID = :AnnouncementId",
                 new { AnnouncementId = announcementId });
@@ -64,7 +64,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<int> TogglePinAsync(string announcementId)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.ExecuteAsync(
                 "UPDATE ANNOUNCEMENTS SET IS_PINNED = CASE WHEN IS_PINNED = 1 THEN 0 ELSE 1 END WHERE ANNOUNCEMENT_ID = :AnnouncementId",
                 new { AnnouncementId = announcementId });

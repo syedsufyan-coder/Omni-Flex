@@ -29,7 +29,7 @@ namespace OmniFlex.Controllers
 
             if (user == null || !BCrypt.Net.BCrypt.Verify(model.Password, user.PasswordHash))
             {
-                ModelState.AddModelError("", "Invalid ID or password.");
+                ModelState.AddModelError("", "Invalid ID or password");
                 return View(model);
             }
 

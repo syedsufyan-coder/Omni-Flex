@@ -26,7 +26,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<Submission?> GetByIdAsync(string submissionId)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.QueryFirstOrDefaultAsync<Submission>(
                 $"SELECT {SELECT_COLUMNS} FROM SUBMISSIONS WHERE SUBMISSION_ID = :SubmissionId",
                 new { SubmissionId = submissionId });
@@ -35,7 +35,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<IEnumerable<Submission>> GetByAssignmentAsync(string assignmentId)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.QueryAsync<Submission>(
                 $"SELECT {SELECT_COLUMNS} FROM SUBMISSIONS WHERE ASSIGNMENT_ID = :AssignmentId",
                 new { AssignmentId = assignmentId });
@@ -44,7 +44,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<IEnumerable<Submission>> GetByStudentAsync(string studentId)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.QueryAsync<Submission>(
                 $"SELECT {SELECT_COLUMNS} FROM SUBMISSIONS WHERE STUDENT_ID = :StudentId",
                 new { StudentId = studentId });
@@ -53,7 +53,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<int> CreateAsync(Submission submission)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.ExecuteAsync(@"
                 INSERT INTO SUBMISSIONS 
                 (SUBMISSION_ID, ASSIGNMENT_ID, STUDENT_ID, SUBMIT_DATE, OBTAINED_MARKS,
@@ -66,7 +66,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<int> GradeAsync(string submissionId, decimal marks, decimal wtg, string gradedBy)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.ExecuteAsync(@"
                 UPDATE SUBMISSIONS SET 
                 OBTAINED_MARKS = :Marks, OBTAINED_WTG = :Wtg, GRADED_BY = :GradedBy, GRADED_AT = SYSDATE
@@ -77,7 +77,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<int> LockAsync(string submissionId)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.ExecuteAsync(
                 "UPDATE SUBMISSIONS SET LOCKED = 1 WHERE SUBMISSION_ID = :SubmissionId",
                 new { SubmissionId = submissionId });

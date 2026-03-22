@@ -87,9 +87,10 @@
                   <td>@user.Email</td>
                   <td>@user.Department</td>
                   <td>
-                      <span class="badge @(user.Status == "Active" ? "bg-success" : "bg-secondary")">
-                          @user.Status
-                      </span>
+                      <span class="badge @(user.Status == "Active" ? "bg-success" : "bg-secondary")"
+                              data-status="@(user.Status == "Withdrawn" ? "inactive" : user.Status.ToLower())">
+                            @(user.Status == "Withdrawn" ? "Inactive" : user.Status)
+                      </span>     
                   </td>
                   <td>
                       <button class="btn btn-sm btn-outline-secondary btn-view-profile"

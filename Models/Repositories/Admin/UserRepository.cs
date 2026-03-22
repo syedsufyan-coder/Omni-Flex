@@ -36,7 +36,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<User?> GetByIdAsync(string userId)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.QueryFirstOrDefaultAsync<User>(
                 $"SELECT {SELECT_COLUMNS} FROM USERS WHERE USER_ID = :UserId",
                 new { UserId = userId });
@@ -45,7 +45,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<User?> GetByEmailAsync(string email)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.QueryFirstOrDefaultAsync<User>(
                 $"SELECT {SELECT_COLUMNS} FROM USERS WHERE EMAIL = :Email",
                 new { Email = email });
@@ -54,7 +54,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<IEnumerable<User>> GetAllAsync()
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.QueryAsync<User>(
                 $"SELECT {SELECT_COLUMNS} FROM USERS");
         }
@@ -62,7 +62,6 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<IEnumerable<User>> GetByRoleAsync(string role)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
             return await conn.QueryAsync<User>(
                 $"SELECT {SELECT_COLUMNS} FROM USERS WHERE ROLE = :Role AND STATUS = 'Active'",
                 new { Role = role });
@@ -71,7 +70,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<int> CreateAsync(User user)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.ExecuteAsync(@"
                 INSERT INTO USERS 
                 (USER_ID, DEPT_ID, FIRST_NAME, LAST_NAME, EMAIL, PASSWORD_HASH, 
@@ -86,7 +85,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<int> UpdateAsync(User user)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.ExecuteAsync(@"
                 UPDATE USERS SET 
                 DEPT_ID = :DeptId, FIRST_NAME = :FirstName, LAST_NAME = :LastName,
@@ -99,7 +98,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<int> DeleteAsync(string userId)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.ExecuteAsync(
                 "DELETE FROM USERS WHERE USER_ID = :UserId",
                 new { UserId = userId });
@@ -108,7 +107,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<bool> ExistsAsync(string userId)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             var count = await conn.ExecuteScalarAsync<int>(
                 "SELECT COUNT(*) FROM USERS WHERE USER_ID = :UserId",
                 new { UserId = userId });
@@ -119,7 +118,7 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<int> GetCountByRoleAsync(string role)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
 
             if(string.Equals(role, "TA", StringComparison.OrdinalIgnoreCase))
             {

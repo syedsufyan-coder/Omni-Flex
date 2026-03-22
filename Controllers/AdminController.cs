@@ -186,7 +186,8 @@ namespace OmniFlex.Controllers
         {
             try
             {
-                var users = await _users.GetByRoleAsync("TA");
+                // TAs are Students — identified via SECTION_TAS table not by Role
+                var users = await _users.GetByRoleAsync("Student");
                 var vm = BuildUserViewModels(users);
                 ViewData["PageTitle"] = "Teaching Assistants";
                 return View("Users", vm);
@@ -265,6 +266,116 @@ namespace OmniFlex.Controllers
         {
             ViewData["PageTitle"] = "Reports & Monitoring";
             return View();
+        }
+
+        [HttpPost] // ASP.NET is informed to accept only POST requests for this method defined
+        // POST requests carry data in the request body, not in the URL
+        public async Task<IActionResult> FilterCourses([FromBody] CourseFilterRequest filter)
+        {
+            try
+            {
+                // CHECK 1 — Make sure at least one filter field is filled
+                // All fields cannot be null/empty at the same time
+                bool hasFilter =
+                    !string.IsNullOrWhiteSpace(filter.DeptId) ||
+                    !string.IsNullOrWhiteSpace(filter.CourseType) ||
+                    !string.IsNullOrWhiteSpace(filter.CourseCat) ||
+                    !string.IsNullOrWhiteSpace(filter.TeacherId) ||
+                    !string.IsNullOrWhiteSpace(filter.SectionId) ||
+                    !string.IsNullOrWhiteSpace(filter.PreReqId) ||
+                    filter.CreditHrs.HasValue;
+
+                if (!hasFilter)
+                    return Json(new { success = false, message = "Please Select a Filter and Enter a Value" });
+
+                // CHECK 2 — Only ONE filter is allowed at a time
+                // Count how many fields are filled
+                int filterCount = 0;
+                if (!string.IsNullOrWhiteSpace(filter.DeptId)) filterCount++;
+                if (!string.IsNullOrWhiteSpace(filter.CourseType)) filterCount++;
+                if (!string.IsNullOrWhiteSpace(filter.CourseCat)) filterCount++;
+                if (!string.IsNullOrWhiteSpace(filter.TeacherId)) filterCount++;
+                if (!string.IsNullOrWhiteSpace(filter.SectionId)) filterCount++;
+                if (!string.IsNullOrWhiteSpace(filter.PreReqId)) filterCount++;
+                if (filter.CreditHrs.HasValue) filterCount++;
+
+                if (filterCount > 1)
+                    return Json(new { success = false, message = "Only One Filter is Allowed at a Time" });
+
+                // CHECK 3 — Length Validation on string fields
+                // No field should be unreasonably long
+                if ((filter.DeptId?.Length > 20) ||
+                    (filter.CourseType?.Length > 20) ||
+                    (filter.CourseCat?.Length > 20) ||
+                    (filter.TeacherId?.Length > 20) ||
+                    (filter.SectionId?.Length > 20) ||
+                    (filter.PreReqId?.Length > 20))
+                    return Json(new { success = false, message = "Your Input is Unreasonably Too Long" });
+
+                // CHECK 4 — SQL Injection Protection on all string fields
+                var allStringValues = new[]
+                {   // Collecting all the filter values into an array to loop through it for protective measures
+                    filter.DeptId, filter.CourseType, filter.CourseCat,
+                    filter.TeacherId, filter.SectionId, filter.PreReqId
+                };
+
+                foreach (var val in allStringValues)
+                {
+                    if (val == null) continue;
+                    if (val.Contains("'") || val.Contains(";") || val.Contains("--"))
+                        return Json(new { success = false, message = "Your Input Posses Invalid Characters" });
+                }
+
+                // CHECK 5 — Range Validation for Credit Hours
+                if (filter.CreditHrs.HasValue && (filter.CreditHrs < 1 || filter.CreditHrs > 4))
+                    return Json(new { success = false, message = "Credit Hours Must be Between 1 and 4" });
+
+                // CHECK 6 — Trim whitespace from all string fields silently if in case user has entered mistakenly
+                filter.DeptId = filter.DeptId?.Trim();
+                filter.CourseType = filter.CourseType?.Trim();
+                filter.CourseCat = filter.CourseCat?.Trim();
+                filter.TeacherId = filter.TeacherId?.Trim();
+                filter.SectionId = filter.SectionId?.Trim();
+                filter.PreReqId = filter.PreReqId?.Trim();
+
+                // check which field is filled and call the respective repository method
+                IEnumerable<CourseDto> result; // a list returning the courses filtered 
+
+                if (!string.IsNullOrWhiteSpace(filter.TeacherId))
+                {
+                    result = await _courses.GetByTeacherWithDetailsAsync(filter.TeacherId);
+                }
+                else if (!string.IsNullOrWhiteSpace(filter.DeptId))
+                {
+                    result = await _courses.GetByDeptWithDetailsAsync(filter.DeptId);
+                }
+                else if (!string.IsNullOrWhiteSpace(filter.CourseType))
+                {
+                    result = await _courses.GetByCourseTypeWithDetailsAsync(filter.CourseType);
+                }
+                else if (!string.IsNullOrWhiteSpace(filter.CourseCat))
+                {
+                    result = await _courses.GetByCourseCatWithDetailsAsync(filter.CourseCat);
+                }
+                else if (!string.IsNullOrWhiteSpace(filter.SectionId))
+                {
+                    result = await _courses.GetBySectionWithDetailsAsync(filter.SectionId);
+                }
+                else if (!string.IsNullOrWhiteSpace(filter.PreReqId))
+                {
+                    result = await _courses.GetByPreRequisiteWithDetailsAsync(filter.PreReqId);
+                }
+                else
+                {
+                    result = await _courses.GetByCreditsWithDetailsAsync(filter.CreditHrs!.Value);
+                }
+
+                return Json(new { success = true, data = result });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
         }
 
         public IActionResult Settings()
