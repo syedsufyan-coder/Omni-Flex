@@ -1,0 +1,74 @@
+@model OmniFlex.Models.ViewModels.Student.CalendarViewModel
+@{
+    ViewData["PageTitle"] = "Calendar";
+    var firstDay = new DateTime(Model.CurrentYear, Model.CurrentMonth, 1);
+    var daysInMonth = DateTime.DaysInMonth(Model.CurrentYear, Model.CurrentMonth);
+    var startOffset = ((int)firstDay.DayOfWeek + 7) % 7;
+    var days = Enumerable.Range(1, daysInMonth).Select(d => new DateTime(Model.CurrentYear, Model.CurrentMonth, d)).ToList();
+    var upcoming = (Model.Events ?? new List<OmniFlex.Models.ViewModels.Student.CalendarEvent>())
+        .Where(e => e.DueDate >= DateTime.Today)
+        .OrderBy(e => e.DueDate)
+        .Take(5)
+        .ToList();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <button class="btn btn-sm btn-outline-primary" id="prevMonth">&lt;</button>
+        <button class="btn btn-sm btn-outline-primary" id="nextMonth">&gt;</button>
+        <strong>@firstDay.ToString("MMMM yyyy")</strong>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-9">
+        <div class="calendar-grid border rounded p-2">
+            <div class="row text-center fw-bold mb-2">
+                <div class="col">Sun</div><div class="col">Mon</div><div class="col">Tue</div>
+                <div class="col">Wed</div><div class="col">Thu</div><div class="col">Fri</div><div class="col">Sat</div>
+            </div>
+            <div class="row g-2">
+                @for (int i = 0; i < startOffset; i++)
+                {
+                    <div class="col border" style="min-height:90px;"></div>
+                }
+                @foreach (var date in days)
+                {
+                    <div class="col border p-1" style="min-height:90px;">
+                        <div class="d-flex justify-content-end"><small>@date.Day</small></div>
+                        @foreach (var ev in (Model.Events ?? Enumerable.Empty<OmniFlex.Models.ViewModels.Student.CalendarEvent>()).Where(e => e.DueDate.Date == date.Date))
+                        {
+                            <div class="badge @ev.ColorClass text-truncate d-block" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px;">@ev.Title</div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3">
+        <div class="card p-3 sticky-top" style="top:1rem;">
+            <h6>Upcoming</h6>
+            @foreach (var ev in upcoming)
+            {
+                <div class="mb-2">
+                    <div><span class="badge @ev.ColorClass">@ev.CourseCode</span> @ev.Title</div>
+                    <small class="text-muted">@ev.DueDate.ToString("dd MMM yyyy")</small>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('prevMonth').addEventListener('click', function(){
+            history.pushState(null, '', window.location.pathname + '?m=' + (@Model.CurrentMonth - 1) + '&y=' + @Model.CurrentYear);
+            location.reload();
+        });
+        document.getElementById('nextMonth').addEventListener('click', function(){
+            history.pushState(null, '', window.location.pathname + '?m=' + (@Model.CurrentMonth + 1) + '&y=' + @Model.CurrentYear);
+            location.reload();
+        });
+    </script>
+}

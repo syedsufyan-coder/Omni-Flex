@@ -1,0 +1,56 @@
+@model OmniFlex.Models.ViewModels.Student.AttendanceViewModel
+@{
+    ViewData["PageTitle"] = "Attendance";
+}
+
+<div class="mb-3">
+    @for (int i = 0; i < Model.Courses?.Count; i++)
+    {
+        var c = Model.Courses[i];
+        <button class="btn btn-outline-primary attendance-tab @(i==0?"active":"")" data-target="#course_@i">@c.CourseCode</button>
+    }
+</div>
+
+@for (int i = 0; i < Model.Courses?.Count; i++)
+{
+    var c = Model.Courses[i];
+    <div id="course_@i" class="attendance-panel @(i==0?"":"d-none")">
+        <div class="row mb-3">
+            <div class="col-md-3"><div class="card p-2 text-center"><strong>Total</strong> <div>@c.TotalClasses</div></div></div>
+            <div class="col-md-3"><div class="card p-2 text-center"><strong>Attended</strong> <div>@c.ClassesAttended</div></div></div>
+            <div class="col-md-3"><div class="card p-2 text-center"><strong>Missed</strong> <div>@c.ClassesMissed</div></div></div>
+            <div class="col-md-3"><div class="card p-2 text-center"><strong>%</strong> <div>@c.AttendancePercentage.ToString("0.0")%</div></div></div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead><tr><th>#</th><th>Date</th><th>Day</th><th>Status</th></tr></thead>
+                <tbody>
+                    @for (int j = 0; j < c.Records?.Count; j++) {
+                        var r = c.Records[j];
+                        var statusClass = r.Status == "Present" ? "badge bg-success" : r.Status == "Absent" ? "badge bg-danger" : "badge bg-warning text-dark";
+                        <tr>
+                            <td>@(j+1)</td>
+                            <td>@r.Date.ToString("dd MMM yyyy")</td>
+                            <td>@r.Day</td>
+                            <td><span class="@statusClass">@r.Status</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.attendance-tab').forEach(function(btn){
+            btn.addEventListener('click', function(){
+                document.querySelectorAll('.attendance-tab').forEach(el=>el.classList.remove('active'));
+                btn.classList.add('active');
+                document.querySelectorAll('.attendance-panel').forEach(el=>el.classList.add('d-none'));
+                document.querySelector(btn.getAttribute('data-target')).classList.remove('d-none');
+            });
+        });
+    </script>
+}

@@ -1,6 +1,7 @@
 using Dapper;
 using OmniFlex.Infrastructure;
 using OmniFlex.Models.Domain.Admin;
+using OmniFlex.Models.ViewModels.Student;
 
 namespace OmniFlex.Models.Repositories.Admin
 {
@@ -25,6 +26,30 @@ namespace OmniFlex.Models.Repositories.Admin
             return await conn.QueryFirstOrDefaultAsync<Enrollment>(
                 $"SELECT {SELECT_COLUMNS} FROM ENROLLMENTS WHERE ENROLL_ID = :EnrollId",
                 new { EnrollId = enrollId });
+        }
+
+        public async Task<List<ClassCard>> GetEnrolledClassesAsync(string studentId)
+        {
+            const string sql = @"SELECT
+                        C.COURSE_ID       AS CourseCode,
+                        C.COURSE_NAME     AS CourseName,
+                        T.FIRST_NAME || ' ' || T.LAST_NAME AS TeacherName,
+                        S.SECTION_LABEL   AS Section,
+                        S.BATCH AS Batch,
+                        S.DEGREE AS Degree
+                FROM ENROLLMENTS E
+                JOIN SECTION_OFFERINGS SO ON SO.OFFERING_ID = E.OFFERING_ID
+                JOIN SEMESTERS SM        ON SM.SEMESTER_ID = SO.SEMESTER_ID
+                JOIN COURSES C           ON C.COURSE_ID    = SO.COURSE_ID
+                JOIN SECTIONS S          ON SO.SECTION_ID  = S.SECTION_ID
+                LEFT JOIN USERS T        ON T.USER_ID      = SO.TEACHER_ID
+                WHERE E.STUDENT_ID = :StudentId AND E.STATUS = 'Registered' AND SM.IS_CURRENT = 1
+                ORDER BY C.COURSE_NAME";
+
+
+            using var conn = _factory.CreateConnection();
+            conn.Open();
+            return (await conn.QueryAsync<ClassCard>(sql, new { StudentId = studentId })).ToList();
         }
 
         public async Task<IEnumerable<Enrollment>> GetByStudentAsync(string studentId)

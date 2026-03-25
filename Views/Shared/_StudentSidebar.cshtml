@@ -1,0 +1,37 @@
+@{
+    string active = ViewData["ActivePage"]?.ToString() ?? "";
+}
+<nav class="d-flex flex-column h-100">
+  <div class="mb-3 d-flex align-items-center gap-2">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" fill="#fff"/></svg>
+    <div>
+      <div style="font-family:Sora;color:#fff">OMNI-FLEX</div>
+      <small style="font-family:Sora;color:#fff">Student Portal</small>
+    </div>
+  </div>
+
+  <div class="d-flex align-items-center gap-2 mb-3">
+    <div class="avatar" style="width:40px;height:40px;border-radius:50%;background:#0EA5E9;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;">@(Context.Session.GetString("UserName")?.Split(' ')[0][0] ?? 'S')</div>
+    <div>
+      <div class="text-white" style="font-family:Sora">@(Context.Session.GetString("UserName") ?? "Student User")</div>
+      <div><span class="badge bg-primary">@(Context.Session.GetString("Role") ?? "Student")</span></div>
+    </div>
+  </div>
+
+  <ul class="nav nav-pills flex-column mb-auto">
+    <li class="nav-item"><a class="nav-link @(active=="Dashboard"?"active":"")" asp-controller="Student" asp-action="Dashboard"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+    <li class="nav-item"><a class="nav-link @(active=="CourseRegistration"?"active":"")" asp-controller="Student" asp-action="CourseRegistration"><i class="bi bi-book me-2"></i>Course Registration</a></li>
+    <li class="nav-item"><a class="nav-link @(active=="Enrolled"?"active":"")" asp-controller="Student" asp-action="Enrolled"><i class="bi bi-mortarboard me-2"></i>Enrolled</a></li>
+    <li class="nav-item"><a class="nav-link @(active=="ToDo"?"active":"")" asp-controller="Student" asp-action="ToDo"><i class="bi bi-check2-square me-2"></i>TO-DO</a></li>
+    <li class="nav-item"><a class="nav-link @(active=="Calendar"?"active":"")" asp-controller="Student" asp-action="Calendar"><i class="bi bi-calendar3 me-2"></i>Calendar</a></li>
+    <li class="nav-item"><a class="nav-link @(active=="Attendance"?"active":"")" asp-controller="Student" asp-action="Attendance"><i class="bi bi-bar-chart-line me-2"></i>Attendance</a></li>
+    <li class="nav-item"><a class="nav-link @(active=="Marks"?"active":"")" asp-controller="Student" asp-action="Marks"><i class="bi bi-pencil-square me-2"></i>Marks</a></li>
+    <li class="nav-item"><a class="nav-link @(active=="Transcript"?"active":"")" asp-controller="Student" asp-action="Transcript"><i class="bi bi-journal-text me-2"></i>Transcript</a></li>
+    <li class="nav-item"><a class="nav-link @(active=="ArchivedClasses"?"active":"")" asp-controller="Student" asp-action="ArchivedClasses"><i class="bi bi-folder2-open me-2"></i>Archived Classes</a></li>
+    <li class="nav-item"><a class="nav-link @(active=="Settings"?"active":"")" asp-controller="Student" asp-action="Settings"><i class="bi bi-gear me-2"></i>Settings</a></li>
+  </ul>
+
+  <div class="mt-auto">
+    <a class="btn btn-ghost w-100 text-start text-white" style="border:none" href="/auth/logout"><i class="bi bi-box-arrow-left me-2"></i>Logout</a>
+  </div>
+</nav>

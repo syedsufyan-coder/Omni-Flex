@@ -1,4 +1,4 @@
-using OmniFlex.Models.Domain.Admin;
+using OmniFlex.Models.Domain.Student;
 
 namespace OmniFlex.Models.Repositories.Admin
 {

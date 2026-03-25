@@ -1,4 +1,4 @@
-namespace OmniFlex.Models.Domain.Admin
+namespace OmniFlex.Models.Domain.Student
 {
     public class User
     {
@@ -24,7 +24,7 @@ namespace OmniFlex.Models.Domain.Admin
         // TA only
         public string? TaPasswordHash {get; set;}
 
-        // Instructor and Admin only
+        // Instructor only
         public string? Designation { get; set; }
         public string? OfficeRoom { get; set; }
         public string? Specialization { get; set; }
