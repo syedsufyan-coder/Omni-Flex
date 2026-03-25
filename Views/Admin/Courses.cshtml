@@ -122,62 +122,238 @@
   </div>
 </div>
 
-<!-- Add Course Modal -->
+<!-- CREATE COURSE MODAL -->
+
 <div class="modal fade" id="addCourseModal" tabindex="-1">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Add New Course</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <form>
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Course Code</label>
-              <input type="text" class="form-control" placeholder="e.g. CS-101" />
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Course</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Course Name</label>
-              <input type="text" class="form-control" placeholder="e.g. Programming Fundamentals" />
+            <div class="modal-body">
+
+                <div id="createCourseError" class="alert alert-danger d-none"></div>
+                <div id="createCourseSuccess" class="alert alert-success d-none"></div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Course Code <span class="text-danger">*</span></label>
+                        <input type="text" id="create_courseId" class="form-control"
+                               placeholder="e.g. CS2005" maxlength="10" />
+                        <div class="form-text">Unique identifier — e.g. CS2005, CL2005</div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Course Name <span class="text-danger">*</span></label>
+                        <input type="text" id="create_courseName" class="form-control"
+                               placeholder="e.g. Advanced DBMS" maxlength="50" />
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Department <span class="text-danger">*</span></label>
+                        <select id="create_deptId" class="form-select">
+                            <option value="">-- Select Department --</option>
+                            <option value="CS">CS — Computer Science</option>
+                            <option value="AI">AI — Artificial Intelligence</option>
+                            <option value="SE">SE — Software Engineering</option>
+                            <option value="CY">CY — Cyber Security</option>
+                            <option value="DS">DS — Data Science</option>
+                            <option value="EE">EE — Electrical Engineering</option>
+                            <option value="SH">SH — Sciences & Humanities</option>
+                            <option value="MG">MG — Management</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Credit Hours <span class="text-danger">*</span></label>
+                        <select id="create_creditHrs" class="form-select">
+                            <option value="">-- Select Credit Hours </option>
+                            <option value="1">1 </option>
+                            <option value="2">2 </option>
+                            <option value="3">3 </option>
+                            <option value="4">4 </option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Course Type <span class="text-danger">*</span></label>
+                        <select id="create_courseType" class="form-select">
+                            <option value="">-- Select Course Type --</option>
+                            <option value="Theory">Theory</option>
+                            <option value="Lab">Lab</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Course Category <span class="text-danger">*</span></label>
+                        <select id="create_courseCat" class="form-select">
+                            <option value="">-- Select Course Category --</option>
+                            <option value="Core">Core</option>
+                            <option value="Elective">Elective</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Prerequisite Course ID</label>
+                        <input type="text" id="create_preReqId" class="form-control"
+                               placeholder="e.g. CS2001 (Optional)" maxlength="10" />
+                        <div class="form-text">Leave Empty If No Prerequisite</div>
+                    </div>
+                </div>
+
             </div>
-          </div>
-          <div class="row">
-            <div class="col-md-4 mb-3">
-              <label class="form-label">Credit Hours</label>
-              <select class="form-select">
-                <option>1</option>
-                <option>2</option>
-                <option selected>3</option>
-                <option>4</option>
-              </select>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitCreateCourse()">
+                    <i class="bi bi-plus-circle me-1"></i>Add Course
+                </button>
             </div>
-            <div class="col-md-4 mb-3">
-              <label class="form-label">Department</label>
-              <select class="form-select">
-                <option>CS</option>
-                <option>EE</option>
-                <option>MT</option>
-                <option>HU</option>
-              </select>
-            </div>
-            <div class="col-md-4 mb-3">
-              <label class="form-label">Max Enrollment</label>
-              <input type="number" class="form-control" value="80" />
-            </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Description</label>
-            <textarea class="form-control" rows="3" placeholder="Course description..."></textarea>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-primary">Add Course</button>
-      </div>
+        </div>
     </div>
-  </div>
+</div>
+
+<!-- EDIT COURSE MODAL -->
+<div class="modal fade" id="editCourseModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Course</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+
+                <div id="editCourseError" class="alert alert-danger d-none"></div>
+                <div id="editCourseSuccess" class="alert alert-success d-none"></div>
+
+                <input type="hidden" id="edit_courseId" />
+
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:30%">Field</th>
+                                <th style="width:35%">Current Value</th>
+                                <th style="width:35%">New Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><label class="form-label mb-0">Course Code</label></td>
+                                <td><input type="text" id="edit_current_courseId" class="form-control form-control-sm" disabled /></td>
+                                <td><span class="text-muted small">Cannot be changed !</span></td>
+                            </tr>
+                            <tr>
+                                <td><label class="form-label mb-0">Course Name <span class="text-danger">*</span></label></td>
+                                <td><input type="text" id="edit_current_courseName" class="form-control form-control-sm" disabled /></td>
+                                <td><input type="text" id="edit_new_courseName" class="form-control form-control-sm" placeholder="New name" maxlength="50" /></td>
+                            </tr>
+                            <tr>
+                                <td><label class="form-label mb-0">Department <span class="text-danger">*</span></label></td>
+                                <td><input type="text" id="edit_current_deptId" class="form-control form-control-sm" disabled /></td>
+                                <td>
+                                    <select id="edit_new_deptId" class="form-select form-select-sm">
+                                        <option value="">-- Select Department --</option>
+                                        <option value="CS">CS</option>
+                                        <option value="AI">AI</option>
+                                        <option value="SE">SE</option>
+                                        <option value="CY">CY</option>
+                                        <option value="DS">DS</option>
+                                        <option value="EE">EE</option>
+                                        <option value="SH">SH</option>
+                                        <option value="MG">MG</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><label class="form-label mb-0">Credit Hours <span class="text-danger">*</span></label></td>
+                                <td><input type="text" id="edit_current_creditHrs" class="form-control form-control-sm" disabled /></td>
+                                <td>
+                                    <select id="edit_new_creditHrs" class="form-select form-select-sm">
+                                        <option value="">-- Select Credit Hours --</option>
+                                        <option value="1">1</option>
+                                        <option value="2">2</option>
+                                        <option value="3">3</option>
+                                        <option value="4">4</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><label class="form-label mb-0">Course Type <span class="text-danger">*</span></label></td>
+                                <td><input type="text" id="edit_current_courseType" class="form-control form-control-sm" disabled /></td>
+                                <td>
+                                    <select id="edit_new_courseType" class="form-select form-select-sm">
+                                        <option value="">-- Select Course Type --</option>
+                                        <option value="Theory">Theory</option>
+                                        <option value="Lab">Lab</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><label class="form-label mb-0">Course Category <span class="text-danger">*</span></label></td>
+                                <td><input type="text" id="edit_current_courseCat" class="form-control form-control-sm" disabled /></td>
+                                <td>
+                                    <select id="edit_new_courseCat" class="form-select form-select-sm">
+                                        <option value="">-- Select Course Category --</option>
+                                        <option value="Core">Core</option>
+                                        <option value="Elective">Elective</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><label class="form-label mb-0">Prerequisite</label></td>
+                                <td><input type="text" id="edit_current_preReqId" class="form-control form-control-sm" disabled /></td>
+                                <td><input type="text" id="edit_new_preReqId" class="form-control form-control-sm" placeholder="e.g. CS2001" maxlength="10" /></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-muted small mt-1">
+                    <i class="bi bi-info-circle me-1"></i>
+                    <strong>Instruction:</strong> Fill only the fields you wish to update.
+                    Any field left blank will retain its current value.
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" onclick="submitEditCourse()">
+                    <i class="bi bi-pencil me-1"></i>Update Course
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteCourseModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title text-danger fw-bold">Delete Course</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-0">
+                <p class="text-muted mb-1">Are you sure you want to delete:</p>
+                <p class="fw-bold fs-5" id="delete_courseName"></p>
+
+                <div id="deleteCourseError" class="alert alert-danger d-none"></div>
+
+                <div class="alert alert-warning border-0 small d-flex align-items-center">
+                    <i class="bi bi-exclamation-triangle-fill fs-5 me-2"></i>
+                    <div>
+                        <strong>Action Permanent:</strong> This cannot be undone.
+                        <span class="d-block text-decoration-underline">Course must not be assigned to any section.</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pb-4">
+                <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger px-4 shadow-sm" onclick="submitDeleteCourse()">
+                    <i class="bi bi-trash me-1"></i> Confirm Delete
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 @section Scripts {

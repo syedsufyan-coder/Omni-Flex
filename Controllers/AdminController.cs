@@ -4,6 +4,7 @@ using OmniFlex.Models.Repositories.Admin;
 using OmniFlex.Models.Domain.Admin;
 using OmniFlex.Models.DTOs;
 using OmniFlex.Models.Services;
+using System.Diagnostics;
 
 namespace OmniFlex.Controllers
 {
@@ -268,6 +269,7 @@ namespace OmniFlex.Controllers
             return View();
         }
 
+        // Courses Fileration 
         [HttpPost] // ASP.NET is informed to accept only POST requests for this method defined
         // POST requests carry data in the request body, not in the URL
         public async Task<IActionResult> FilterCourses([FromBody] CourseFilterRequest filter)
@@ -371,6 +373,161 @@ namespace OmniFlex.Controllers
                 }
 
                 return Json(new { success = true, data = result });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // Courses CRUD Operations
+
+        [HttpGet]
+        public async Task<IActionResult> GetCourse(string id)
+        {
+            try
+            {
+                var course = await _courses.GetByIdAsync(id);
+                if(course == null)
+                {
+                    return Json(new { success = false, message = "Course Not Found" });
+                }
+                return Json(new { success = true, data = course });
+            }
+            catch(Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message});
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateCourse([FromBody] Course course)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(course.CourseId))
+                    return Json(new { success = false, message = "Course ID is Required" });
+
+                if (string.IsNullOrWhiteSpace(course.CourseName))
+                    return Json(new { success = false, message = "Course Name is Required" });
+
+                if (string.IsNullOrWhiteSpace(course.DeptId))
+                    return Json(new { success = false, message = "Department is Required" });
+
+                if (string.IsNullOrWhiteSpace(course.CourseType))
+                    return Json(new { success = false, message = "Course Type is Required" });
+
+                if (string.IsNullOrWhiteSpace(course.CourseCat))
+                    return Json(new { success = false, message = "Course Category is Required" });
+
+                if (course.CreditHrs < 1 || course.CreditHrs > 4)
+                    return Json(new { success = false, message = "Credit Hours must be between 1 and 4" });
+
+                // SQL Injection Protection, Security Measure
+                var stringFields = new[] { course.CourseId, course.CourseName, course.CourseCat, course.DeptId, course.CourseType, course.PreReqId };
+                foreach (var field in stringFields)
+                {
+                    if (field == null) continue;
+                    if (field.Contains("'") || field.Contains(";") || field.Contains("--"))
+                        return Json(new { success = false, message = "Invalid characters found in input" });
+                }
+                // Trim whitespaces if any
+                course.CourseId = course.CourseId.Trim().ToUpper();
+                course.CourseName = course.CourseName.Trim();
+                course.DeptId = course.DeptId.Trim().ToUpper();
+                course.IsActive = 1; // new course is active by default
+
+                var result = await _courses.CreateAsync(course);
+                if (result > 0)
+                    return Json(new { success = true, message = "Course Created Successfully" });
+
+                return Json(new { success = false, message = "Failed to Create Course" });
+            }
+            catch (Exception ex)
+            {
+                // Duplicate primary key
+                if (ex.Message.Contains("unique") || ex.Message.Contains("ORA-00001"))
+                    return Json(new { success = false, message = "Course ID already exists" });
+
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // POST — Update an existing course
+        [HttpPost]
+        public async Task<IActionResult> UpdateCourse([FromBody] Course course)
+        {
+            try
+            {
+                // Validation
+                if (string.IsNullOrWhiteSpace(course.CourseId))
+                    return Json(new { success = false, message = "Course ID is required" });
+
+                if (string.IsNullOrWhiteSpace(course.CourseName))
+                    return Json(new { success = false, message = "Course Name is required" });
+
+                if (string.IsNullOrWhiteSpace(course.DeptId))
+                    return Json(new { success = false, message = "Department is required" });
+
+                if (course.CreditHrs < 1 || course.CreditHrs > 4)
+                    return Json(new { success = false, message = "Credit Hours must be between 1 and 4" });
+
+                // Trim
+                course.CourseName = course.CourseName.Trim();
+                course.DeptId = course.DeptId.Trim().ToUpper();
+
+                var result = await _courses.UpdateAsync(course);
+                if (result > 0)
+                    return Json(new { success = true, message = "Course Updated Successfully" });
+
+                return Json(new { success = false, message = "Course not found or no changes made" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+        // POST — Delete course
+        [HttpPost]
+        public async Task<IActionResult> DeleteCourse([FromBody] string courseId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(courseId))
+                    return Json(new { success = false, message = "Course ID is required" });
+
+                var result = await _courses.DeleteAsync(courseId);
+                if (result > 0)
+                    return Json(new { success = true, message = "Course deleted successfully" });
+
+                return Json(new { success = false, message = "Course not found" });
+            }
+            catch (Exception ex)
+            {
+                // Foreign key constraint — course is being used
+                if (ex.Message.Contains("ORA-02292") || ex.Message.Contains("integrity constraint"))
+                    return Json(new { success = false, message = "Cannot delete — course is assigned to sections or has enrollments" });
+
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // POST — Toggle active status
+        [HttpPost]
+        public async Task<IActionResult> ToggleCourseStatus([FromBody] string courseId)
+        {
+            try
+            {
+                var course = await _courses.GetByIdAsync(courseId);
+                if (course == null)
+                    return Json(new { success = false, message = "Course not found" });
+
+                // Toggle — if active make inactive, if inactive make active
+                int newStatus = course.IsActive == 1 ? 0 : 1;
+                await _courses.SetActiveStatusAsync(courseId, newStatus);
+
+                string statusText = newStatus == 1 ? "activated" : "deactivated";
+                return Json(new { success = true, message = $"Course {statusText} successfully", newStatus });
             }
             catch (Exception ex)
             {

@@ -1,0 +1,119 @@
+Purpose of Each Table:
+
+ASSESSMENTS (Parent / Master Table)
+This is the central table that holds all types of assessments in a course (Assignments, Sessional-I, Sessional-II, Midterm, Final Exam, Quiz, Lab Task, Project, etc.).
+It defines the assessment name, total marks, weightage, and type. Both Submissions and Graded Examinations will reference this table.
+
+SUBMISSIONS
+This table is used only for Assignments (homework, projects, etc.) where students actually submit their work.
+It tracks submission date, late status, obtained marks, grader details, and locking status.
+
+GRADED_EXAMINATIONS
+This table is used for all examinations and tests (Sessional, Midterm, Final, Quiz, Lab, etc.) where there is no submission workflow.
+Marks are entered directly by the teacher. It is kept clean without irrelevant columns like submit_date or is_late.
+
+-- =============================================
+-- 1. ASSESSMENTS (Master Table) - Create First
+-- =============================================
+CREATE TABLE ASSESSMENTS (
+    ASSESSMENT_ID      NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    OFFERING_ID        NUMBER NOT NULL,
+    ASSESSMENT_TYPE    VARCHAR2(30) NOT NULL,
+    TITLE              VARCHAR2(200) NOT NULL,
+    TOTAL_MARKS        NUMBER(5,2) NOT NULL,
+    WEIGHTAGE          NUMBER(5,2) NOT NULL,        -- Percentage weight in final grade
+    ASSESSMENT_DATE    DATE,
+    IS_LOCKED          CHAR(1) DEFAULT 'N' NOT NULL,
+
+    CONSTRAINT fk_assess_offering 
+        FOREIGN KEY (OFFERING_ID) REFERENCES SECTION_OFFERINGS(OFFERING_ID),
+
+    CONSTRAINT chk_assess_type 
+        CHECK (ASSESSMENT_TYPE IN ('Assignment', 'Sessional I', 'Sessional II', 
+                                   'Midterm', 'Final Exam', 'Quiz', 'Lab Task', 
+                                   'Project', 'Presentation', 'Other')),
+
+    CONSTRAINT chk_assess_locked 
+        CHECK (IS_LOCKED IN ('Y', 'N'))
+);
+
+
+-- =============================================
+-- 2. SUBMISSIONS (For Assignments only)
+-- =============================================
+CREATE TABLE SUBMISSIONS (
+    SUBMISSION_ID      NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    
+    ASSIGNMENT_ID      NUMBER NOT NULL,     -- References Assessments where type = 'Assignment'
+    ENROLL_ID          NUMBER NOT NULL,
+    
+    SUBMIT_DATE        TIMESTAMP DEFAULT SYSTIMESTAMP,
+    OBTAINED_MARKS     NUMBER(5,2),
+    OBTAINED_WTG       NUMBER(5,2),           -- Cached weighted marks
+    
+    IS_LATE            CHAR(1) DEFAULT 'N' NOT NULL,
+    GRADED_BY          NUMBER,
+    GRADED_DATE        TIMESTAMP,
+    
+    IS_LOCKED          CHAR(1) DEFAULT 'N' NOT NULL,
+
+    CONSTRAINT fk_sub_assignment 
+        FOREIGN KEY (ASSIGNMENT_ID) REFERENCES ASSESSMENTS(ASSESSMENT_ID),
+    
+    CONSTRAINT fk_sub_enroll 
+        FOREIGN KEY (ENROLL_ID) REFERENCES ENROLLMENTS(ENROLL_ID),
+    
+    CONSTRAINT fk_sub_grader 
+        FOREIGN KEY (GRADED_BY) REFERENCES USERS(USER_ID),
+
+    CONSTRAINT chk_sub_late 
+        CHECK (IS_LATE IN ('Y', 'N')),
+    
+    CONSTRAINT chk_sub_locked 
+        CHECK (IS_LOCKED IN ('Y', 'N')),
+    
+    CONSTRAINT chk_sub_marks 
+        CHECK (OBTAINED_MARKS IS NULL OR OBTAINED_MARKS >= 0),
+
+    CONSTRAINT uq_sub_per_student 
+        UNIQUE (ASSIGNMENT_ID, ENROLL_ID)        -- One submission per student per assignment
+);
+
+
+-- =============================================
+-- 3. GRADED_EXAMINATIONS (For Exams & Tests)
+-- =============================================
+CREATE TABLE GRADED_EXAMINATIONS (
+    EXAM_RESULT_ID     NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    
+    ENROLL_ID          NUMBER NOT NULL,
+    ASSESSMENT_ID      NUMBER NOT NULL,          -- References any exam-type assessment
+    
+    OBTAINED_MARKS     NUMBER(5,2) NOT NULL,
+    OBTAINED_WTG       NUMBER(5,2),                -- Cached weighted marks
+    
+    GRADED_BY          NUMBER NOT NULL,
+    GRADED_DATE        TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL,
+    
+    REMARKS            VARCHAR2(500),              -- Optional teacher comments
+    
+    IS_LOCKED          CHAR(1) DEFAULT 'N' NOT NULL,
+
+    CONSTRAINT fk_exam_enroll 
+        FOREIGN KEY (ENROLL_ID) REFERENCES ENROLLMENTS(ENROLL_ID),
+    
+    CONSTRAINT fk_exam_assessment 
+        FOREIGN KEY (ASSESSMENT_ID) REFERENCES ASSESSMENTS(ASSESSMENT_ID),
+    
+    CONSTRAINT fk_exam_grader 
+        FOREIGN KEY (GRADED_BY) REFERENCES USERS(USER_ID),
+
+    CONSTRAINT chk_exam_locked 
+        CHECK (IS_LOCKED IN ('Y', 'N')),
+    
+    CONSTRAINT chk_exam_marks_positive 
+        CHECK (OBTAINED_MARKS >= 0),
+
+    CONSTRAINT uq_exam_per_student 
+        UNIQUE (ASSESSMENT_ID, ENROLL_ID)         -- One result per student per assessment
+);

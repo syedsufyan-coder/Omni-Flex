@@ -1,6 +1,6 @@
 // admin-courses.js - Courses page functionality
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Initialize tooltips
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const table = document.getElementById('coursesTable');
     const tbody = table.querySelector('tbody');
 
-    searchInput.addEventListener('input', function() {
+    searchInput.addEventListener('input', function () {
         const searchTerm = this.value.toLowerCase();
         const rows = tbody.querySelectorAll('tr');
 
@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const sortableHeaders = document.querySelectorAll('.sortable');
 
     sortableHeaders.forEach(header => {
-        header.addEventListener('click', function() {
+        header.addEventListener('click', function () {
             const columnIndex = Array.from(header.parentElement.children).indexOf(header);
             const rows = Array.from(tbody.querySelectorAll('tr'));
             const isAscending = header.classList.contains('asc');
@@ -62,13 +62,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const addCourseModal = document.getElementById('addCourseModal');
     const addCourseForm = addCourseModal.querySelector('form');
 
-    addCourseModal.addEventListener('shown.bs.modal', function() {
+    addCourseModal.addEventListener('shown.bs.modal', function () {
         // Focus on first input
         addCourseForm.querySelector('input').focus();
     });
 
     // Form validation and submission
-    addCourseForm.addEventListener('submit', function(e) {
+    addCourseForm.addEventListener('submit', function (e) {
         e.preventDefault();
 
         // Basic validation
@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Action buttons (view, assign, edit, delete)
-    tbody.addEventListener('click', function(e) {
+    tbody.addEventListener('click', function (e) {
         const button = e.target.closest('button');
         if (!button) return;
 
@@ -303,4 +303,248 @@ function showFilterError(message) {
 function hideFilterError() {
     var errorDiv = document.getElementById('filterError');
     errorDiv.style.display = 'none';
+}
+
+// COURSES CRUD
+var currentDeleteCourseId = null;
+// EDIT button click — load course data into edit modal
+document.addEventListener('DOMContentLoaded', function () {
+
+    // Edit button click
+    document.querySelector('#coursesTable tbody').addEventListener('click', function (e) {
+        var btn = e.target.closest('button');
+        if (!btn) return;
+
+        var row = btn.closest('tr');
+        var courseId = row.children[1].textContent.trim();
+
+        if (btn.querySelector('.bi-pencil')) {
+            openEditCourseModal(courseId);
+        }
+
+        if (btn.querySelector('.bi-trash')) {
+            openDeleteCourseModal(courseId, row.children[2].textContent.trim());
+        }
+    });
+});
+
+// Open Edit Modal — fetch current data from server
+function openEditCourseModal(courseId) {
+    // Clear previous values
+    document.getElementById('editCourseError').classList.add('d-none');
+    document.getElementById('editCourseSuccess').classList.add('d-none');
+
+    $.ajax({
+        url: '/Admin/GetCourse',
+        type: 'GET',
+        data: { id: courseId },
+        success: function (response) {
+            if (response.success) {
+                var c = response.data;
+                // Fill current value fields
+                document.getElementById('edit_courseId').value = c.courseId;
+                document.getElementById('edit_current_courseId').value = c.courseId;
+                document.getElementById('edit_current_courseName').value = c.courseName;
+                document.getElementById('edit_current_deptId').value = c.deptId;
+                document.getElementById('edit_current_creditHrs').value = c.creditHrs;
+                document.getElementById('edit_current_courseType').value = c.courseType;
+                document.getElementById('edit_current_courseCat').value = c.courseCat;
+                document.getElementById('edit_current_preReqId').value = c.preReqId || 'None';
+
+                // Clear new value fields
+                document.getElementById('edit_new_courseName').value = '';
+                document.getElementById('edit_new_deptId').value = '';
+                document.getElementById('edit_new_creditHrs').value = '';
+                document.getElementById('edit_new_courseType').value = '';
+                document.getElementById('edit_new_courseCat').value = '';
+                document.getElementById('edit_new_preReqId').value = '';
+
+                // Open modal
+                new bootstrap.Modal(document.getElementById('editCourseModal')).show();
+            } else {
+                alert('Error: ' + response.message);
+            }
+        },
+        error: function () {
+            alert('Failed to Load Course Data !');
+        }
+    });
+}
+
+// Submit Create Course
+function submitCreateCourse() {
+    var errorDiv = document.getElementById('createCourseError');
+    var successDiv = document.getElementById('createCourseSuccess');
+    errorDiv.classList.add('d-none');
+    successDiv.classList.add('d-none');
+
+    // Read form values
+    var courseId = document.getElementById('create_courseId').value.trim();
+    var courseName = document.getElementById('create_courseName').value.trim();
+    var deptId = document.getElementById('create_deptId').value;
+    var creditHrs = document.getElementById('create_creditHrs').value;
+    var courseType = document.getElementById('create_courseType').value;
+    var courseCat = document.getElementById('create_courseCat').value;
+    var preReqId = document.getElementById('create_preReqId').value.trim();
+
+    // Client side validation
+    if (!courseId) return showModalError(errorDiv, 'Course Code is required');
+    if (!courseName) return showModalError(errorDiv, 'Course Name is required');
+    if (!deptId) return showModalError(errorDiv, 'Department is required');
+    if (!creditHrs) return showModalError(errorDiv, 'Credit Hours is required');
+    if (!courseType) return showModalError(errorDiv, 'Course Type is required');
+    if (!courseCat) return showModalError(errorDiv, 'Course Category is required');
+
+    var data = {
+        courseId: courseId,
+        courseName: courseName,
+        deptId: deptId,
+        creditHrs: parseInt(creditHrs),
+        courseType: courseType,
+        courseCat: courseCat,
+        preReqId: preReqId || null,
+        isActive: 1
+    };
+
+    $.ajax({
+        url: '/Admin/CreateCourse',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function (response) {
+            if (response.success) {
+                successDiv.textContent = response.message;
+                successDiv.classList.remove('d-none');
+                // Reload page after 1.5 seconds
+                setTimeout(function () { location.reload(); }, 1500);
+            } else {
+                showModalError(errorDiv, response.message);
+            }
+        },
+        error: function () {
+            showModalError(errorDiv, 'Something went wrong | Please try again.');
+        }
+    });
+}
+
+// Submit Edit Course
+function submitEditCourse() {
+    var errorDiv = document.getElementById('editCourseError');
+    var successDiv = document.getElementById('editCourseSuccess');
+    errorDiv.classList.add('d-none');
+    successDiv.classList.add('d-none');
+
+    var courseId = document.getElementById('edit_courseId').value;
+
+    // New values — if empty use current values
+    var courseName = document.getElementById('edit_new_courseName').value.trim()
+        || document.getElementById('edit_current_courseName').value.trim();
+    var deptId = document.getElementById('edit_new_deptId').value
+        || document.getElementById('edit_current_deptId').value;
+    var creditHrs = document.getElementById('edit_new_creditHrs').value
+        || document.getElementById('edit_current_creditHrs').value;
+    var courseType = document.getElementById('edit_new_courseType').value
+        || document.getElementById('edit_current_courseType').value;
+    var courseCat = document.getElementById('edit_new_courseCat').value
+        || document.getElementById('edit_current_courseCat').value;
+    var preReqId = document.getElementById('edit_new_preReqId').value.trim()
+        || document.getElementById('edit_current_preReqId').value.trim();
+
+    if (preReqId === 'None') preReqId = null;
+
+    var data = {
+        courseId: courseId,
+        courseName: courseName,
+        deptId: deptId,
+        creditHrs: parseInt(creditHrs),
+        courseType: courseType,
+        courseCat: courseCat,
+        preReqId: preReqId || null,
+        isActive: 1
+    };
+
+    $.ajax({
+        url: '/Admin/UpdateCourse',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function (response) {
+            if (response.success) {
+                successDiv.textContent = response.message;
+                successDiv.classList.remove('d-none');
+                setTimeout(function () { location.reload(); }, 1500);
+            } else {
+                showModalError(errorDiv, response.message);
+            }
+        },
+        error: function () {
+            showModalError(errorDiv, 'Something went wrong. Please try again.');
+        }
+    });
+}
+
+// Open Delete Modal 
+function openDeleteCourseModal(courseId, courseName) {
+    currentDeleteCourseId = courseId;
+
+    let cleanName = courseName.replace(/[^\x20-\x7E]/g, '').trim();
+
+    document.getElementById('delete_courseName').innerHTML =
+        `<div class="p-3 mb-2 bg-light rounded border-start border-4 border-danger">
+            <span class="text-muted small d-block">COURSE TO BE REMOVED:</span>
+            <strong class="text-primary">${courseId}</strong> 
+            <span class="mx-2 text-muted">|</span> 
+            <span class="text-dark">${cleanName}</span>
+        </div>`;
+
+    const errorDiv = document.getElementById('deleteCourseError');
+    if (errorDiv) {
+        errorDiv.classList.add('d-none');
+    }
+
+    var deleteModal = new bootstrap.Modal(document.getElementById('deleteCourseModal'));
+    deleteModal.show();
+}
+
+// submit DELETION handling
+function submitDeleteCourse() {
+    const errorDiv = document.getElementById('deleteCourseError');
+    const btn = document.querySelector('#deleteCourseModal .btn-danger');
+    const originalText = '<i class="bi bi-trash me-1"></i> Confirm Delete';
+
+    errorDiv.classList.add('d-none');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+
+    $.ajax({
+        url: '/Admin/DeleteCourse',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(currentDeleteCourseId),
+        success: function (response) {
+            if (response.success) {
+                btn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Deleted';
+                btn.classList.replace('btn-danger', 'btn-success');
+                setTimeout(() => { location.reload(); }, 800);
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+
+                errorDiv.innerHTML = `<i class="bi bi-exclamation-triangle me-2"></i> ${response.message || "Cannot Delete: Course is assigned to a section."}`;
+                errorDiv.classList.remove('d-none', 'alert-danger');
+                errorDiv.classList.add('alert-warning', 'animate__animated', 'animate__shakeX');
+            }
+        },
+        error: function () {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            showModalError(errorDiv, 'Server connection lost. Please try again.');
+        }
+    });
+}
+
+// Helper — show error in modal
+function showModalError(div, message) {
+    div.textContent = message;
+    div.classList.remove('d-none');
 }

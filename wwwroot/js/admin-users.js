@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const status = statusBadge ? statusBadge.getAttribute('data-status') : '';
 
             const matchesSearch = name.includes(searchTerm) || email.includes(searchTerm);
-            const matchesRole = !roleValue || role === roleValue;
+            const matchesRole = !roleValue || role === roleValue;  
             const matchesStatus = !statusValue || status.includes(statusValue);
 
             if (matchesSearch && matchesRole && matchesStatus) {
