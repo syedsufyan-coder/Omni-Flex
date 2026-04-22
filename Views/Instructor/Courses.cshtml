@@ -1,0 +1,32 @@
+@model List<OmniFlex.Models.ViewModels.Instructor.InstructorCourseCard>
+
+<h3 class="mb-3">Courses</h3>
+<div class="row g-3">
+    @foreach (var course in Model)
+    {
+        <div class="col-12 col-md-6 col-xl-4">
+            <div class="card h-100 shadow-sm">
+                <div class="p-3 text-white" style="background-color:@course.BannerColorClass; min-height:110px;">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5 class="mb-1 text-white">@course.CourseCode</h5>
+                            <div class="text-white-75">@course.CourseName</div>
+                        </div>
+                        <span class="badge bg-white text-dark">@course.CourseType</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2 text-muted">@course.Degree • Batch @course.Batch</p>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <small><strong>@course.CreditHours</strong> Cr. Hrs</small>
+                        <small><strong>@course.StudentsCount</strong> Students</small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a class="btn btn-sm btn-primary" href="#">Open</a>
+                        <a class="btn btn-sm btn-outline-light" href="#">Classwork</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

@@ -25,6 +25,7 @@ builder.Services.AddScoped<OmniFlex.Models.Repositories.Admin.IAssignmentReposit
 builder.Services.AddScoped<OmniFlex.Models.Repositories.Admin.ISubmissionRepository, OmniFlex.Models.Repositories.Admin.SubmissionRepository>();
 builder.Services.AddScoped<OmniFlex.Models.Repositories.Admin.IAttendanceRepository, OmniFlex.Models.Repositories.Admin.AttendanceRepository>();
 builder.Services.AddScoped<OmniFlex.Models.Repositories.Admin.IResultRepository, OmniFlex.Models.Repositories.Admin.ResultRepository>();
+builder.Services.AddScoped<OmniFlex.Models.Repositories.Instructor.IInstructorRepository, OmniFlex.Models.Repositories.Instructor.InstructorRepository>();
 
 var app = builder.Build();
 

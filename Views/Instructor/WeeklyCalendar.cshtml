@@ -1,0 +1,98 @@
+@model OmniFlex.Models.ViewModels.Instructor.InstructorWeeklyCalendarViewModel
+
+<h3 class="mb-3">Weekly Calendar</h3>
+<div class="row g-3 mb-4">
+    <div class="col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div>
+                        <h5 class="mb-1">Current Week</h5>
+                        <span class="text-muted">@Model.Summary.Semester</span>
+                    </div>
+                    <span class="badge bg-primary fs-6">Week @Model.Summary.CurrentWeek</span>
+                </div>
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item px-0 border-0 d-flex justify-content-between align-items-center">
+                        <div>Quizzes Completed</div>
+                        <strong>@Model.Summary.QuizzesCompleted</strong>
+                    </div>
+                    <div class="list-group-item px-0 border-0 d-flex justify-content-between align-items-center">
+                        <div>Assignments Completed</div>
+                        <strong>@Model.Summary.AssignmentsCompleted</strong>
+                    </div>
+                    <div class="list-group-item px-0 border-0 d-flex justify-content-between align-items-center">
+                        <div>Mids Completed</div>
+                        <strong>@Model.Summary.MidsCompleted</strong>
+                    </div>
+                    <div class="list-group-item px-0 border-0 d-flex justify-content-between align-items-center">
+                        <div>Finals Completed</div>
+                        <strong>@Model.Summary.FinalsCompleted</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5 class="mb-1">Assessment Plan</h5>
+                        <small class="text-muted">Every assessment type is tracked for the current week</small>
+                    </div>
+                    <span class="badge bg-success">Teacher view</span>
+                </div>
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="card border-0 shadow-sm p-3">
+                            <div class="text-uppercase text-muted small">Quizzes</div>
+                            <h4 class="mt-2 mb-0">@Model.Summary.QuizzesCompleted</h4>
+                            <small class="text-muted">Completed</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="card border-0 shadow-sm p-3">
+                            <div class="text-uppercase text-muted small">Assignments</div>
+                            <h4 class="mt-2 mb-0">@Model.Summary.AssignmentsCompleted</h4>
+                            <small class="text-muted">Completed</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="card border-0 shadow-sm p-3">
+                            <div class="text-uppercase text-muted small">Mids</div>
+                            <h4 class="mt-2 mb-0">@Model.Summary.MidsCompleted</h4>
+                            <small class="text-muted">Completed</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="card border-0 shadow-sm p-3">
+                            <div class="text-uppercase text-muted small">Finals</div>
+                            <h4 class="mt-2 mb-0">@Model.Summary.FinalsCompleted</h4>
+                            <small class="text-muted">Completed</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <h6 class="mb-3">Assigned Courses</h6>
+                    <div class="row g-3">
+                        @foreach (var course in Model.AssignedCourses.Take(4))
+                        {
+                            <div class="col-12 col-sm-6">
+                                <div class="card border-0 shadow-sm p-3">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <strong>@course.CourseCode</strong>
+                                            <div class="text-muted small">@course.CourseName</div>
+                                        </div>
+                                        <span class="badge bg-primary">@course.CourseType</span>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

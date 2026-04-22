@@ -1,0 +1,146 @@
+@model OmniFlex.Models.ViewModels.Instructor.InstructorAttendanceViewModel
+
+<h3 class="mb-3">Manage Attendance</h3>
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form class="row g-3" method="get" asp-action="ManageAttendance" asp-controller="Instructor">
+            <div class="col-sm-6 col-md-3">
+                <label class="form-label">Semester</label>
+                <select class="form-select" name="selectedCourseId" aria-label="Semester">
+                    @foreach (var item in Model.CourseOptions)
+                    {
+                        if (item.Value == Model.SelectedCourseId)
+                        {
+                            <option value="@item.Value" selected>@item.Label</option>
+                        }
+                        else
+                        {
+                            <option value="@item.Value">@item.Label</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-sm-6 col-md-3">
+                <label class="form-label">Course</label>
+                <select class="form-select" name="selectedSectionId" aria-label="Course">
+                    @foreach (var item in Model.SectionOptions)
+                    {
+                        if (item.Value == Model.SelectedSectionId)
+                        {
+                            <option value="@item.Value" selected>@item.Label</option>
+                        }
+                        else
+                        {
+                            <option value="@item.Value">@item.Label</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-sm-6 col-md-2">
+                <label class="form-label">Month</label>
+                <select class="form-select" name="selectedMonth" aria-label="Month">
+                    @foreach (var item in Model.MonthOptions)
+                    {
+                        if (item.Value == Model.SelectedMonth)
+                        {
+                            <option value="@item.Value" selected>@item.Label</option>
+                        }
+                        else
+                        {
+                            <option value="@item.Value">@item.Label</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-sm-6 col-md-2">
+                <label class="form-label">Duration</label>
+                <select class="form-select" name="duration" aria-label="Duration" disabled>
+                    @foreach (var item in Model.DurationOptions)
+                    {
+                        if (item.Value == Model.SelectedDuration)
+                        {
+                            <option value="@item.Value" selected>@item.Label</option>
+                        }
+                        else
+                        {
+                            <option value="@item.Value">@item.Label</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-sm-12 col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">Refresh</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h6>Current Week</h6>
+                <p class="display-6 mb-0">@Model.CurrentWeek</p>
+                <small class="text-muted">Week of the semester</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h6>Section</h6>
+                <p class="mb-0">@Model.SectionOptions.FirstOrDefault(o => o.Value == Model.SelectedSectionId)?.Label ?? "N/A"</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h6>Course</h6>
+                <p class="mb-0">@Model.CourseOptions.FirstOrDefault(o => o.Value == Model.SelectedCourseId)?.Label ?? "N/A"</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-0">Attendance Sheet</h5>
+            <small class="text-muted">Students in the selected section</small>
+        </div>
+        <button class="btn btn-sm btn-outline-primary" type="button">Add Attendance</button>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        @foreach (var header in Model.AttendanceHeaders)
+                        {
+                            <th>@header</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var student in Model.Students)
+                    {
+                        <tr>
+                            <td>@student.SNo</td>
+                            <td>@student.RollNo</td>
+                            <td>@student.FullName</td>
+                            @for (int i = 0; i < student.Statuses.Count; i++)
+                            {
+                                <td>
+                                    <span class="badge @(student.Statuses[i] == "Present" ? "bg-success" : student.Statuses[i] == "Late" ? "bg-warning text-dark" : "bg-danger")">
+                                        @student.Statuses[i]
+                                    </span>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
