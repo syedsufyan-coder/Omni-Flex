@@ -15,11 +15,20 @@ namespace OmniFlex.Controllers
     {
         private readonly IUserRepository _users;
         private readonly IEnrollmentRepository _enrollments;
+        private readonly IAttendanceRepository _attendance;
+        private readonly IResultRepository _results;
 
-        public StudentController(IUserRepository users, IEnrollmentRepository enrollments)
+        public StudentController(
+            IUserRepository users,
+            IEnrollmentRepository enrollments,
+            IAttendanceRepository attendance,
+            IResultRepository results
+            )
         {
             _users = users;
             _enrollments = enrollments;
+            _attendance = attendance;
+            _results = results;
         }
 
         private string GetGreeting()
@@ -28,6 +37,45 @@ namespace OmniFlex.Controllers
             return hour < 12 ? "Good morning"
                  : hour < 17 ? "Good afternoon"
                  : "Good evening";
+        }
+
+        private bool IsAjaxRequest()
+        {
+            return Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+        }
+
+        public class AddPostCommentRequest
+        {
+            public long PostId { get; set; }
+            public string Content { get; set; } = string.Empty;
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AddPostComment([FromBody] AddPostCommentRequest request)
+        {
+            if (request == null || request.PostId <= 0 || string.IsNullOrWhiteSpace(request.Content))
+            {
+                return BadRequest(new { success = false, message = "Comment content is required." });
+            }
+
+            string userId = "U010"; // Hardcoded for now, or get from User.Identity
+            var rowsAffected = await _enrollments.AddPostCommentAsync(request.PostId, userId, request.Content.Trim());
+            if (rowsAffected <= 0)
+            {
+                return StatusCode(500, new { success = false, message = "Unable to save comment." });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                comment = new
+                {
+                    PostId = request.PostId,
+                    CommentorName = "You",
+                    Content = request.Content.Trim(),
+                    CommentedTimeAndDate = DateTime.Now.ToString("t")
+                }
+            });
         }
 
         // TO-DO: Remove hardcoded UserId and get from User.Identity once authentication is implemented
@@ -78,9 +126,9 @@ namespace OmniFlex.Controllers
                 // Additional Info (Map from first course if available, or leave defaults)
                 Section = enrolledCourses.FirstOrDefault()?.SectionLabel.ToString() ?? "N/A"
             };
-            if(model.EnrolledCourses != null)
+            if (model.EnrolledCourses != null)
             {
-                foreach(var course in model.EnrolledCourses)
+                foreach (var course in model.EnrolledCourses)
                 {
                     course.SectionLabel = SectionHelper.GetFormattedSectionLabel(course.Degree, course.SectionLabel.ToString(), course.Batch);
                     course.CourseName += course.CreditHours == 1 ? " - Lab" : " - Theory";
@@ -112,7 +160,7 @@ namespace OmniFlex.Controllers
             {
                 ActiveClasses = enrolledCourses
             };
-            if(model.ActiveClasses != null)
+            if (model.ActiveClasses != null)
             {
                 foreach (var course in model.ActiveClasses)
                 {
@@ -122,6 +170,72 @@ namespace OmniFlex.Controllers
             }
             ViewData["ActivePage"] = "Enrolled";
             ViewData["PageTitle"] = "Enrolled";
+            return View(model);
+        }
+
+        public async Task<IActionResult> CourseDetails(string courseId, string tab = "stream")
+        {
+            string userId = "U010"; // Hardcoded for now, or get from User.Identity
+            var enrolledCourses = await _enrollments.GetEnrolledClassesAsync(userId);
+            var course = enrolledCourses.FirstOrDefault(c => string.Equals(c.CourseCode, courseId, StringComparison.OrdinalIgnoreCase));
+            if (course == null)
+            {
+                return NotFound();
+            }
+
+            var normalizedTab = string.IsNullOrWhiteSpace(tab) ? "stream" : tab.Trim().ToLowerInvariant();
+            if (normalizedTab != "stream" && normalizedTab != "classwork" && normalizedTab != "people")
+            {
+                normalizedTab = "stream";
+            }
+
+            var model = new CourseDetailsViewModel
+            {
+                CourseId = course.CourseCode,
+                CourseName = course.CourseName,
+                InstructorName = course.TeacherName,
+                Section = course.Section,
+                Degree = course.Degree,
+                Batch = course.Batch,
+                ActiveTab = normalizedTab,
+                CourseDescription = "A modern cohort course designed for strong participation, full transparency, and easy access to classwork.",
+                UpcomingDueCount = 3,
+                ClassworkItems = new List<string>
+                {
+                    "Assignment 1: Requirements Document",
+                    "Quiz 1: Fundamentals of the course",
+                    "Group Project Proposal"
+                },
+                People = new List<string>
+                {
+                    "Ayesha Khan",
+                    "Bilal Ahmed",
+                    "Fatima Noor",
+                    "Omar Saeed"
+                }
+            };
+
+            // 2. Fetch Posts ONLY if we are on the 'stream' tab
+            if (normalizedTab == "stream")
+            {
+                var offeringId = await _enrollments.GetOfferingIdByCourseCodeAsync(course.CourseCode, userId);
+                // NOTE: Ensure your service method uses the correct ID (OfferingId vs CourseCode)
+                model.PostData = await _enrollments.GetCoursePostsAsync(offeringId);
+            }
+
+            if (IsAjaxRequest())
+            {
+                var partialName = normalizedTab switch
+                {
+                    "classwork" => "_CourseClasswork",
+                    "people" => "_CoursePeople",
+                    _ => "_CourseStream"
+                };
+                return PartialView(partialName, model);
+            }
+
+            ViewData["ActivePage"] = "Enrolled";
+            ViewData["PageTitle"] = course.CourseName;
             return View(model);
         }
 
@@ -175,40 +289,12 @@ namespace OmniFlex.Controllers
             return View(model);
         }
 
-        public IActionResult Attendance()
+        public async Task<IActionResult> Attendance()
         {
+            string userId = "U010"; // Hardcoded for now, or get from User.Identity
             ViewData["ActivePage"] = "Attendance";
             ViewData["PageTitle"] = "Attendance";
-            var model = new AttendanceViewModel
-            {
-                Courses = new List<CourseAttendance>
-                {
-                    new() { CourseCode="CS3012", CourseName="Software Engineering", Section="BCS-2G", TotalClasses=30, ClassesAttended=26, ClassesMissed=4, AttendancePercentage=86.7,
-                        Records=new List<AttendanceRecord>
-                        {
-                            new(){ Date=DateTime.Now.AddDays(-1), Day="Tuesday", Status="Present"},
-                            new(){ Date=DateTime.Now.AddDays(-2), Day="Monday", Status="Absent"},
-                            new(){ Date=DateTime.Now.AddDays(-3), Day="Sunday", Status="Present"}
-                        }
-                    },
-                    new() { CourseCode="CS3014", CourseName="Database Systems", Section="BCS-2G", TotalClasses=30, ClassesAttended=21, ClassesMissed=9, AttendancePercentage=70.0,
-                        Records=new List<AttendanceRecord>
-                        {
-                            new(){ Date=DateTime.Now.AddDays(-1), Day="Tuesday", Status="Present"},
-                            new(){ Date=DateTime.Now.AddDays(-2), Day="Monday", Status="Present"},
-                            new(){ Date=DateTime.Now.AddDays(-3), Day="Sunday", Status="Absent"}
-                        }
-                    },
-                    new() { CourseCode="CS3016", CourseName="Operating Systems", Section="BCS-2G", TotalClasses=30, ClassesAttended=17, ClassesMissed=13, AttendancePercentage=56.7,
-                        Records=new List<AttendanceRecord>
-                        {
-                            new(){ Date=DateTime.Now.AddDays(-1), Day="Tuesday", Status="Absent"},
-                            new(){ Date=DateTime.Now.AddDays(-2), Day="Monday", Status="Present"},
-                            new(){ Date=DateTime.Now.AddDays(-3), Day="Sunday", Status="Absent"}
-                        }
-                    }
-                }
-            };
+            var model = await _attendance.GetStudentAttendanceAsync(userId);
             return View(model);
         }
 
@@ -252,60 +338,12 @@ namespace OmniFlex.Controllers
             return View(model);
         }
 
-        public IActionResult Transcript()
+        public async Task<IActionResult> Transcript()
         {
             ViewData["ActivePage"] = "Transcript";
             ViewData["PageTitle"] = "Transcript";
-            var model = new TranscriptViewModel
-            {
-                RollNo = "22K-4567",
-                StudentName = "Ahmed Raza",
-                Degree = "BS Computer Science",
-                Batch = "2022",
-                Program = "Undergraduate",
-                Semesters = new List<SemesterTranscript>
-                {
-                    new() {
-                        SemesterLabel = "Spring 2023",
-                        CreditHoursAttempted = 15,
-                        CreditHoursEarned = 15,
-                        SGPA = 3.75,
-                        CGPA = 3.75,
-                        Courses = new List<TranscriptCourse>
-                        {
-                            new(){ Code="CS2001", CourseName="Data Structures", Section="BCS-1A", CreditHours=3, Grade="A", GradePoints=4.0, Type="Core" },
-                            new(){ Code="CS2002", CourseName="Discrete Math", Section="BCS-1A", CreditHours=3, Grade="A-", GradePoints=3.7, Type="Core" },
-                            new(){ Code="CS2003", CourseName="Calculus", Section="BCS-1A", CreditHours=3, Grade="B+", GradePoints=3.3, Type="Core" }
-                        }
-                    },
-                    new() {
-                        SemesterLabel = "Fall 2023",
-                        CreditHoursAttempted = 16,
-                        CreditHoursEarned = 16,
-                        SGPA = 3.85,
-                        CGPA = 3.80,
-                        Courses = new List<TranscriptCourse>
-                        {
-                            new(){ Code="CS3001", CourseName="Algorithms", Section="BCS-2A", CreditHours=3, Grade="A", GradePoints=4.0, Type="Core" },
-                            new(){ Code="CS3002", CourseName="Object Oriented", Section="BCS-2A", CreditHours=3, Grade="A", GradePoints=4.0, Type="Core" },
-                            new(){ Code="CS3003", CourseName="Statistics", Section="BCS-2A", CreditHours=3, Grade="B+", GradePoints=3.3, Type="Core" }
-                        }
-                    },
-                    new() {
-                        SemesterLabel = "Spring 2024",
-                        CreditHoursAttempted = 15,
-                        CreditHoursEarned = 15,
-                        SGPA = 3.90,
-                        CGPA = 3.82,
-                        Courses = new List<TranscriptCourse>
-                        {
-                            new(){ Code="CS3012", CourseName="Software Engineering", Section="BCS-2G", CreditHours=3, Grade="A", GradePoints=4.0, Type="Core" },
-                            new(){ Code="CS3014", CourseName="Database Systems", Section="BCS-2G", CreditHours=3, Grade="A-", GradePoints=3.7, Type="Core" },
-                            new(){ Code="CS3016", CourseName="Operating Systems", Section="BCS-2G", CreditHours=3, Grade="B", GradePoints=3.0, Type="Core" }
-                        }
-                    }
-                }
-            };
+            string userId = "U010"; // Hardcoded for now, or get from User.Identity
+            var model = await _results.GetDetailedTranscriptAsync(userId); // Hardcoded for now, or get from User.Identity
             return View(model);
         }
 

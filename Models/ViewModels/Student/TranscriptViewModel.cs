@@ -4,32 +4,33 @@ namespace OmniFlex.Models.ViewModels.Student
 {
     public class TranscriptViewModel
     {
-        public string RollNo { get; set; }
+        public string StudentId { get; set; }
         public string StudentName { get; set; }
-        public string Degree { get; set; }
-        public string Batch { get; set; }
-        public string Program { get; set; }
-        public List<SemesterTranscript> Semesters { get; set; }
+        public string DegreeProgram { get; set; }
+        public int Batch { get; set; }
+        public List<SemesterSection>? Semesters { get; set; }
     }
 
-    public class SemesterTranscript
+    public class SemesterSection
     {
-        public string SemesterLabel { get; set; }
-        public int CreditHoursAttempted { get; set; }
-        public int CreditHoursEarned { get; set; }
-        public double SGPA { get; set; }
-        public double CGPA { get; set; }
-        public List<TranscriptCourse> Courses { get; set; }
+        public string SemesterName { get; set; }
+        public decimal SemCrAtt { get; set; }
+        public decimal SemCrErnd { get; set; }
+        public decimal SGPA { get; set; }
+        public decimal CGPA { get; set; }
+        public List<TranscriptCourseRow> Courses { get; set; } = new();
     }
 
-    public class TranscriptCourse
+    public class TranscriptCourseRow
     {
         public string Code { get; set; }
         public string CourseName { get; set; }
         public string Section { get; set; }
-        public int CreditHours { get; set; }
+        public int Batch { get; set; }
+        public string Degree { get; set; }
+        public decimal Credits { get; set; }
         public string Grade { get; set; }
-        public double GradePoints { get; set; }
-        public string Type { get; set; }
+        public decimal Points { get; set; }
+        public string Type { get; set; } // Core, Elective, etc.
     }
 }

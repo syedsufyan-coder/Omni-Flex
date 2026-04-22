@@ -29,5 +29,24 @@ namespace OmniFlex.Models.Services
             // Result: e.g. "CS" + "1" + "002" = "CS1002"
             return $"{dept}{level}{formattedNumber}";
         }
+        public static string GetFullDegreeName(string degree)
+        {
+            return degree switch
+            {
+                "CS" => "Bachelors in Computer Science",
+                "CSE" => "Bachelors in Computer Engineering",
+                "EE" => "Bachelors in Electrical Engineering",
+                "BA" => "Bachelors in Business Administration",
+                "CY" => "Bachelors in Cybersecurity",
+                "AI" => "Bachelors in Artificial Intelligence",
+                "DS" => "Bachelors in Data Science",
+                "IS" => "Bachelors in Information Systems",
+                "SE" => "Bachelors in Software Engineering",
+                "IT" => "Bachelors in Information Technology",
+                "CE" => "Bachelors in Civil Engineering",
+                "ME" => "Bachelors in Mechanical Engineering",
+                _ => degree // Return the original code if no match is found
+            };
+        }
     }
 }

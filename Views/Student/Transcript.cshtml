@@ -3,48 +3,142 @@
     ViewData["PageTitle"] = "Transcript";
 }
 
-<div class="row mb-3">
-    <div class="col-md-6">
-        <p><strong>Roll No:</strong> @Model.RollNo</p>
-        <p><strong>Name:</strong> @Model.StudentName</p>
-    </div>
-    <div class="col-md-6">
-        <p><strong>Degree:</strong> @Model.Degree</p>
-        <p><strong>Batch:</strong> @Model.Batch</p>
-    </div>
-</div>
+<div class="container-fluid mt-3">
 
-<div class="card p-3">
-    <div class="d-flex justify-content-between mb-3">
-        <h5>Transcript</h5>
-        <button class="btn btn-outline-secondary btn-sm" onclick="window.print()">Print / Export</button>
-    </div>
+    <!-- 🎓 STUDENT INFO -->
+    <div class="card shadow-sm border-0 mb-4 p-3">
+        <div class="row">
 
-    @foreach (var s in Model.Semesters ?? new List<OmniFlex.Models.ViewModels.Student.SemesterTranscript>())
-    {
-        <div class="mb-4">
-            <h6>@s.SemesterLabel</h6>
-            <div class="mb-2">Cr. Att: @s.CreditHoursAttempted | Cr. Ernd: @s.CreditHoursEarned | CGPA: @s.CGPA.ToString("F2") | SGPA: @s.SGPA.ToString("F2")</div>
-            <div class="table-responsive">
-                <table class="table table-sm table-bordered">
-                    <thead><tr><th>Code</th><th>Course Name</th><th>Section</th><th>CrdHrs</th><th>Grade</th><th>Points</th><th>Type</th></tr></thead>
-                    <tbody>
-                        @foreach (var c in s.Courses)
-                        {
-                            <tr>
-                                <td>@c.Code</td>
-                                <td>@c.CourseName</td>
-                                <td>@c.Section</td>
-                                <td>@c.CreditHours</td>
-                                <td>@c.Grade</td>
-                                <td>@c.GradePoints</td>
-                                <td>@c.Type</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+            <div class="col-md-6">
+                <p class="mb-1"><strong>Roll No:</strong> @Model.StudentId</p>
+                <p class="mb-0"><strong>Name:</strong> @Model.StudentName</p>
             </div>
-            <hr />
+
+            <div class="col-md-6 text-md-end">
+                <p class="mb-1"><strong>Degree:</strong> @Model.DegreeProgram</p>
+                <p class="mb-0"><strong>Batch:</strong> @Model.Batch</p>
+            </div>
+
         </div>
-    }
+    </div>
+
+    <!-- 📜 TRANSCRIPT CARD -->
+    <div class="card shadow-sm border-0">
+
+        <!-- HEADER -->
+        <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+
+            <h5 class="mb-0 text-primary fw-semibold">
+                <i class="bi bi-file-earmark-text me-2"></i>Transcript
+            </h5>
+
+            <button class="btn btn-outline-primary btn-sm" onclick="window.print()">
+                <i class="bi bi-printer me-1"></i> Print / Export
+            </button>
+
+        </div>
+
+        <div class="p-3">
+
+            @foreach (var s in Model.Semesters)
+            {
+                var cgpaColor = s.CGPA >= 3.0m ? "text-success" :
+                                s.CGPA >= 2.0m ? "text-warning" : "text-danger";
+
+                var sgpaColor = s.SGPA >= 3.0m ? "text-success" :
+                                s.SGPA >= 2.0m ? "text-warning" : "text-danger";
+
+                <div class="mb-4">
+
+                    <!-- 🧠 SEMESTER HEADER -->
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+
+                        <h6 class="fw-bold text-dark mb-0">
+                            @s.SemesterName
+                        </h6>
+
+                        <div class="d-flex gap-3 small">
+
+                            <span class="text-muted">
+                                Cr.Att: <strong>@s.SemCrAtt</strong>
+                            </span>
+
+                            <span class="text-muted">
+                                Cr.Ernd: <strong>@s.SemCrErnd</strong>
+                            </span>
+
+                            <span class="@cgpaColor">
+                                CGPA: <strong>@s.CGPA.ToString("F2")</strong>
+                            </span>
+
+                            <span class="@sgpaColor">
+                                SGPA: <strong>@s.SGPA.ToString("F2")</strong>
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                    <!-- 📋 TABLE -->
+                    <div class="table-responsive">
+
+                        <table class="table table-hover align-middle mb-0">
+
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Code</th>
+                                    <th>Course Name</th>
+                                    <th>Section</th>
+                                    <th>Credits</th>
+                                    <th>Grade</th>
+                                    <th>Points</th>
+                                    <th>Type</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+
+                                @foreach (var c in s.Courses)
+                                {
+                                    var gradeColor =
+                                    c.Grade == "A" || c.Grade == "A-" ? "text-success fw-semibold" :
+                                    c.Grade == "B" || c.Grade == "B-" ? "text-primary fw-semibold" :
+                                    c.Grade == "C" ? "text-warning fw-semibold" :
+                                    "text-danger fw-semibold";
+
+                                    <tr>
+                                        <td class="fw-semibold text-primary">@c.Code</td>
+                                        <td>@c.CourseName</td>
+                                        <td>@c.Section</td>
+                                        <td>@c.Credits</td>
+
+                                        <td class="@gradeColor">
+                                            @c.Grade
+                                        </td>
+
+                                        <td>@c.Points</td>
+
+                                        <td>
+                                            <span class="badge bg-light text-dark border">
+                                                @c.Type
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                    <hr class="mt-4" />
+
+                </div>
+            }
+
+        </div>
+
+    </div>
+
 </div>
