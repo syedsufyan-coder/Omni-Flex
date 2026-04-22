@@ -22,8 +22,9 @@ namespace OmniFlex.Models.ViewModels.Student
 
     public class AttendanceRecord
     {
-        public DateTime Date { get; set; }
-        public string Day { get; set; }
+        public DateTime Attendance_Date { get; set; }
+        public string Attendance_Day { get; set; } = string.Empty;
+        public double Duration { get; set; }
         public string Status { get; set; }
     }
 }
