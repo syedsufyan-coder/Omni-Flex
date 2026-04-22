@@ -493,3 +493,5 @@ bin/
 appsettings.Development.json
 appsettings.json
 
+# Some sensitive .md files
+*.md
