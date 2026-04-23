@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Dapper;
+using OmniFlex.Infrastructure;
 using OmniFlex.Models.DTOs;
 using OmniFlex.Models.Repositories.Admin;
 using OmniFlex.Models.Services;
@@ -11,47 +13,35 @@ namespace OmniFlex.Models.Repositories.Instructor
 {
     public class InstructorRepository : IInstructorRepository
     {
-        private readonly IUserRepository _users;
-        private readonly ICourseRepository _courses;
-        private readonly ISectionRepository _sections;
-        private readonly IEnrollmentRepository _enrollments;
-        private readonly IAttendanceRepository _attendance;
 
-        public InstructorRepository(
-            IUserRepository users,
-            ICourseRepository courses,
-            ISectionRepository sections,
-            IEnrollmentRepository enrollments,
-            IAttendanceRepository attendance)
-        {
-            _users = users;
-            _courses = courses;
-            _sections = sections;
-            _enrollments = enrollments;
-            _attendance = attendance;
-        }
+        private readonly DbConnectionFactory _factory;
+
+        public InstructorRepository(DbConnectionFactory factory)
+            => _factory = factory;
 
         public async Task<InstructorDashboardViewModel> GetDashboardAsync(string instructorId)
         {
             var profile = await BuildProfileAsync(instructorId);
-            var sections = (await _sections.GetByTeacherAsync(instructorId))?.ToList() ?? new List<SectionsDto>();
-            var assignedClasses = new List<InstructorAssignedClassCard>();
+            var assignedClasses = await GetAssignedClassesAsync(instructorId);
+            var classCards = new List<InstructorAssignedClassCard>();
 
-            foreach (var section in sections.Take(6))
+            if(assignedClasses != null)
             {
-                assignedClasses.Add(new InstructorAssignedClassCard
+                foreach(var assignedClass in assignedClasses){
+                classCards.Add(new InstructorAssignedClassCard
                 {
-                    CourseCode = section.SectionId.Replace("-", string.Empty).ToUpperInvariant(),
-                    CourseName = section.Department != string.Empty ? section.Department : "Assigned Course",
-                    Section = SectionHelper.GetFormattedSectionLabel(section.Degree, section.SectionLabel, section.Batch),
-                    CreditHrs = "3",
-                    CourseType = "Theory",
-                    EnrolledStudents = await _sections.GetEnrolledCountAsync(section.SectionId),
-                    Status = "In Progress"
+                    CourseCode = assignedClass.CourseCode,
+                    CourseName = assignedClass.CourseName,
+                    Section = SectionHelper.GetFormattedSectionLabel(assignedClass.Degree,assignedClass.Section,assignedClass.Batch),
+                    CreditHrs = assignedClass.CreditHrs,
+                    CourseType = assignedClass.CourseType,
+                    EnrolledStudents = assignedClass.EnrolledStudents,
+                    Status = assignedClass.Status
                 });
+                }
             }
 
-            var courseCards = MapCourseCards(await _courses.GetByTeacherWithDetailsAsync(instructorId));
+            var courseCards = await GetCoursesAsync(instructorId);
 
             var weeklySummary = new InstructorWeeklySummary
             {
@@ -71,12 +61,113 @@ namespace OmniFlex.Models.Repositories.Instructor
             {
                 GreetingMessage = GetGreeting(),
                 Profile = profile,
-                AssignedClasses = assignedClasses,
+                AssignedClasses = classCards,
                 WeeklySummary = weeklySummary,
                 Courses = courseCards
             };
         }
 
+        public async Task<IEnumerable<AssignedClassesDTO>> GetAssignedClassesAsync(string instructorId)
+        {
+            const string sql = @"SELECT 
+                    c.COURSE_ID            AS CourseCode,
+                    c.COURSE_NAME          AS CourseName,
+                    s.SECTION_LABEL        AS Section,
+                    s.BATCH                AS Batch,
+                    s.DEGREE               AS Degree,
+                    TO_CHAR(c.CREDIT_HRS)  AS CreditHrs,
+                    c.COURSE_TYPE          AS CourseType,
+    
+                    COUNT(e.ENROLL_ID)     AS EnrolledStudents,
+    
+                CASE 
+                    WHEN c.IS_ACTIVE = 1 THEN 'Active'
+                ELSE 'Inactive'
+                END                    AS Status
+
+                FROM SECTION_OFFERINGS so
+
+                JOIN COURSES c 
+                    ON c.COURSE_ID = so.COURSE_ID
+
+                JOIN SECTIONS s 
+                    ON s.SECTION_ID = so.SECTION_ID
+
+                LEFT JOIN ENROLLMENTS e 
+                ON e.OFFERING_ID = so.OFFERING_ID
+                AND e.STATUS = 'Registered'   -- only count active enrollments
+
+                -- Filter: only current semester
+                JOIN SEMESTERS sem 
+                    ON sem.SEMESTER_ID = so.SEMESTER_ID
+                    AND sem.IS_CURRENT = 1
+
+                -- Filter: classes assigned to instructor
+                WHERE so.TEACHER_ID = :InstructorId
+
+                GROUP BY 
+                c.COURSE_ID,
+                c.COURSE_NAME,
+                s.SECTION_LABEL,
+                s.BATCH,
+                s.DEGREE,
+                c.CREDIT_HRS,
+                c.COURSE_TYPE,
+                c.IS_ACTIVE";
+
+            using var conn = _factory.CreateConnection();
+            conn.Open();
+            var result = await conn.QueryAsync<AssignedClassesDTO>(sql, new { InstructorId = instructorId });
+            return result ?? new List<AssignedClassesDTO>();
+        }
+
+        public async Task<List<InstructorCourseCard>> GetCoursesAsync(string instructorId)
+        {
+            const string sql = @"SELECT
+                        C.COURSE_ID       AS CourseCode,
+                        C.COURSE_NAME     AS CourseName,
+                        S.SECTION_LABEL   AS Section,
+                        S.BATCH           AS Batch,
+                        S.DEGREE          AS Degree,
+                        C.CREDIT_HRS       AS CreditHours,
+                        C.COURSE_TYPE     AS CourseType,
+                        'FALSE'              AS IsArchived, -- Assuming all courses are active for now
+                        COUNT(E.ENROLL_ID) AS StudentsCount
+
+                    FROM SECTION_OFFERINGS SO
+
+                    JOIN COURSES C 
+                        ON C.COURSE_ID = SO.COURSE_ID
+
+                    JOIN SECTIONS S 
+                        ON S.SECTION_ID = SO.SECTION_ID
+
+                    JOIN SEMESTERS SM 
+                        ON SM.SEMESTER_ID = SO.SEMESTER_ID AND SM.IS_CURRENT = 1
+
+                    LEFT JOIN ENROLLMENTS E 
+                        ON E.OFFERING_ID = SO.OFFERING_ID AND E.STATUS = 'Registered'
+
+                    WHERE SO.TEACHER_ID = :TeacherId
+
+                    GROUP BY 
+                        C.COURSE_ID,
+                        C.COURSE_NAME,
+                        S.SECTION_LABEL,
+                        S.BATCH,
+                        S.DEGREE,
+                        C.CREDIT_HRS,
+                        C.COURSE_TYPE,
+                        C.IS_ACTIVE
+
+                    ORDER BY C.COURSE_NAME";
+
+            using var conn = _factory.CreateConnection();
+            conn.Open();
+            var result = await conn.QueryAsync<InstructorCourseCard>(sql, new { TeacherId = instructorId });
+            return result.ToList();
+        }
+/*
         public async Task<List<InstructorCourseCard>> GetCoursesAsync(string instructorId)
         {
             return MapCourseCards(await _courses.GetByTeacherWithDetailsAsync(instructorId));
@@ -174,7 +265,7 @@ namespace OmniFlex.Models.Repositories.Instructor
                 Students = students
             };
         }
-
+*/
         private static string GetGreeting()
         {
             var hour = DateTime.Now.Hour;
@@ -182,54 +273,33 @@ namespace OmniFlex.Models.Repositories.Instructor
                  : hour < 17 ? "Good afternoon"
                  : "Good evening";
         }
-
         private async Task<InstructorProfileInfo> BuildProfileAsync(string instructorId)
         {
-            var user = await _users.GetByIdAsync(instructorId);
-            if (user == null)
-            {
-                return new InstructorProfileInfo
-                {
-                    InstructorId = "I000",
-                    FullName = "Instructor User",
-                    Designation = "Instructor",
-                    OfficeRoom = "---",
-                    Specialization = "---",
-                    Status = "Active",
-                    Gender = "N/A",
-                    Email = "noreply@omniflex.edu",
-                    DOB = "01-Jan-1980",
-                    MobileNo = "+92 300 0000000",
-                    BloodGroup = "O+",
-                    Nationality = "Pakistani",
-                    Address = "Campus Road",
-                    HomePhone = "021-1234567",
-                    PostalCode = "44000",
-                    City = "Lahore",
-                    Country = "Pakistan"
-                };
-            }
+            const string sql = @"SELECT 
+                    USER_ID AS InstructorId,
+                    FIRST_NAME || ' ' || LAST_NAME AS FullName,
+                    DESIGNATION AS Designation,
+                    OFFICE_ROOM AS OfficeRoom,
+                    SPECIALIZATION AS Specialization,
+                    STATUS AS Status,
+                    GENDER AS Gender,
+                    EMAIL AS Email,
+                    DOB AS DOB, -- Formats Date to String
+                    PHONE_NUMBER AS MobileNo,
+                    'N/A' AS BloodGroup,
+                    'Pakistani' AS Nationality,
+                    ADDRESS AS Address,
+                    'N/A' AS HomePhone,
+                    'N/A' AS PostalCode,
+                    CITY AS City,
+                    COUNTRY AS Country
+                FROM USERS
+                WHERE USER_ID = :InstructorId AND ROLE = 'Instructor'";
 
-            return new InstructorProfileInfo
-            {
-                InstructorId = user.UserId,
-                FullName = $"{user.FirstName} {user.LastName}",
-                Designation = user.Designation ?? "Lecturer",
-                OfficeRoom = user.OfficeRoom ?? "B-204",
-                Specialization = user.Specialization ?? "Computer Science",
-                Status = string.IsNullOrWhiteSpace(user.Status) ? "Active" : user.Status,
-                Gender = user.Gender,
-                Email = user.Email,
-                DOB = user.DOB == default ? "N/A" : user.DOB.ToString("dd-MMM-yyyy"),
-                MobileNo = user.PhoneNumber,
-                BloodGroup = "O+",
-                Nationality = "Pakistani",
-                Address = user.Address,
-                HomePhone = "021-3456789",
-                PostalCode = "44000",
-                City = string.IsNullOrWhiteSpace(user.City) ? "Lahore" : user.City,
-                Country = string.IsNullOrWhiteSpace(user.Country) ? "Pakistan" : user.Country
-            };
+            using var conn = _factory.CreateConnection();
+            conn.Open();
+            var result = await conn.QueryFirstOrDefaultAsync<InstructorProfileInfo>(sql, new { InstructorId = instructorId });
+            return result ?? new InstructorProfileInfo();
         }
 
         private static List<InstructorCourseCard> MapCourseCards(IEnumerable<CourseDto>? courses)

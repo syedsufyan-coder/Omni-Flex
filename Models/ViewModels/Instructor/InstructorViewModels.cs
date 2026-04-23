@@ -8,7 +8,7 @@ namespace OmniFlex.Models.ViewModels.Instructor
         public InstructorProfileInfo Profile { get; set; } = new InstructorProfileInfo();
         public List<InstructorAssignedClassCard> AssignedClasses { get; set; } = new List<InstructorAssignedClassCard>();
         public InstructorWeeklySummary WeeklySummary { get; set; } = new InstructorWeeklySummary();
-        public List<InstructorCourseCard> Courses { get; set; } = new List<InstructorCourseCard>();
+        public List<InstructorCourseCard>? Courses { get; set; } = new List<InstructorCourseCard>();
     }
 
     public class InstructorWeeklyCalendarViewModel
@@ -48,7 +48,7 @@ namespace OmniFlex.Models.ViewModels.Instructor
         public string Status { get; set; } = string.Empty;
         public string Gender { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
-        public string DOB { get; set; } = string.Empty;
+        public DateTime DOB { get; set; }
         public string MobileNo { get; set; } = string.Empty;
         public string BloodGroup { get; set; } = string.Empty;
         public string Nationality { get; set; } = string.Empty;
