@@ -30,7 +30,6 @@ namespace OmniFlex.Models.Repositories.Admin
             STATUS         AS Status,
             BATCH          AS Batch,
             DEGREE         AS Degree,
-            TA_PASSWORD_HASH AS TaPasswordHash,
             DESIGNATION    AS Designation,
             OFFICE_ROOM    AS OfficeRoom,
             SPECIALIZATION AS Specialization";
@@ -136,11 +135,11 @@ namespace OmniFlex.Models.Repositories.Admin
             return await conn.ExecuteAsync(@"
                 INSERT INTO USERS 
                 (USER_ID, DEPT_ID, FIRST_NAME, LAST_NAME, EMAIL, PASSWORD_HASH, 
-                 ROLE, STATUS, BATCH, DEGREE, TA_PASSWORD_HASH,
+                 ROLE, STATUS, BATCH, DEGREE,
                  DESIGNATION, OFFICE_ROOM, SPECIALIZATION)
                 VALUES 
                 (:UserId, :DeptId, :FirstName, :LastName, :Email, :PasswordHash,
-                 :Role, :Status, :Batch, :Degree, :TaPasswordHash,
+                 :Role, :Status, :Batch, :Degree,
                  :Designation, :OfficeRoom, :Specialization)", user);
         }
 
@@ -152,7 +151,7 @@ namespace OmniFlex.Models.Repositories.Admin
                 UPDATE USERS SET 
                 DEPT_ID = :DeptId, FIRST_NAME = :FirstName, LAST_NAME = :LastName,
                 EMAIL = :Email, PASSWORD_HASH = :PasswordHash, ROLE = :Role, STATUS = :Status,
-                BATCH = :Batch, DEGREE = :Degree, TA_PASSWORD_HASH = :TaPasswordHash,
+                BATCH = :Batch, DEGREE = :Degree,
                 DESIGNATION = :Designation, OFFICE_ROOM = :OfficeRoom, SPECIALIZATION = :Specialization
                 WHERE USER_ID = :UserId", user);
         }

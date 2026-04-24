@@ -21,9 +21,6 @@ namespace OmniFlex.Models.Domain.Student
         public int? Batch { get; set; }
         public string? Degree { get; set; }
 
-        // TA only
-        public string? TaPasswordHash {get; set;}
-
         // Instructor only
         public string? Designation { get; set; }
         public string? OfficeRoom { get; set; }
