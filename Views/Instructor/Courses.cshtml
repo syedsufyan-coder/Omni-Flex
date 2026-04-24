@@ -16,14 +16,27 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <p class="mb-2 text-muted">@course.Degree • Batch @course.Batch</p>
+                    <p class="mb-2 text-muted">@course.Section • Batch @course.Batch</p>
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <small><strong>@course.CreditHours</strong> Cr. Hrs</small>
-                        <small><strong>@course.StudentsCount</strong> Students</small>
+                       <div><strong>@course.CreditHours</strong> Credit Hrs </div>
+                       @{
+                        if(course.StudentsCount == 0)
+                        {
+                            <div><strong>0</strong> Students</div>
+                        }
+                        else if(course.StudentsCount == 1)
+                        {
+                            <div><strong>1</strong> Student</div>
+                        }
+                        else
+                        {
+                            <div><strong>@course.StudentsCount</strong> Students</div>
+                        }
+                       }
                     </div>
                     <div class="d-flex gap-2">
-                        <a class="btn btn-sm btn-primary" href="#">Open</a>
-                        <a class="btn btn-sm btn-outline-light" href="#">Classwork</a>
+                        <a class="btn btn-sm btn-primary" asp-controller="Instructor" asp-action="Classroom" asp-route-offeringId="@course.OfferingId" asp-route-tab="stream">Open</a>
+                        <a class="btn btn-sm btn-outline-light" asp-controller="Instructor" asp-action="Classroom" asp-route-offeringId="@course.OfferingId" asp-route-tab="classwork">Classwork</a>
                     </div>
                 </div>
             </div>

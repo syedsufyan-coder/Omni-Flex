@@ -61,6 +61,7 @@ namespace OmniFlex.Models.ViewModels.Instructor
 
     public class InstructorAssignedClassCard
     {
+        public string OfferingId { get; set; } = string.Empty;
         public string CourseCode { get; set; } = string.Empty;
         public string CourseName { get; set; } = string.Empty;
         public string Section { get; set; } = string.Empty;
@@ -72,6 +73,7 @@ namespace OmniFlex.Models.ViewModels.Instructor
 
     public class InstructorCourseCard
     {
+        public string OfferingId { get; set; } = string.Empty;
         public string CourseCode { get; set; } = string.Empty;
         public string CourseName { get; set; } = string.Empty;
         public string Section { get; set; } = string.Empty;
@@ -110,5 +112,20 @@ namespace OmniFlex.Models.ViewModels.Instructor
     {
         public string Value { get; set; } = string.Empty;
         public string Label { get; set; } = string.Empty;
+    }
+
+    public class StudentsViewModel
+    {
+        public string StudentId { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+    }
+
+    public class InstructorPeopleViewModel
+    {
+        public string TeacherName { get; set; } = string.Empty;
+        public string TeacherEmail { get; set; } = string.Empty;
+        public List<StudentsViewModel> Students { get; set; } = new List<StudentsViewModel>();
+        public StudentsViewModel? TeachingAssistant { get; set; }
     }
 }

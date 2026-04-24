@@ -52,6 +52,11 @@ app.MapControllerRoute(
     defaults: new { controller = "Student", action = "CourseDetails" });
 
 app.MapControllerRoute(
+    name: "instructorClassroom",
+    pattern: "Instructor/Classroom/{offeringId}/{tab}",
+    defaults: new { controller = "Instructor", action = "Classroom", tab = "stream" });
+
+app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 

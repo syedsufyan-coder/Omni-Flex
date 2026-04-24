@@ -8,6 +8,10 @@ namespace OmniFlex.Models.Repositories.Instructor
         Task<IEnumerable<AssignedClassesDTO>> GetAssignedClassesAsync(string instructorId);
         Task<InstructorDashboardViewModel> GetDashboardAsync(string instructorId);
         Task<List<InstructorCourseCard>> GetCoursesAsync(string instructorId);
+        Task<InstructorClassroomViewModel> GetInstructorClassroomAsync(string offeringId);
+        Task<InstructorPeopleViewModel> GetInstructorPeopleAsync(string offeringId);
+        Task<InstructorAssignmentViewModel> GetInstructorAssignmentDetailsAsync(int assignmentId);
+        Task<GradesViewModel> GetInstructorGradesGridAsync(string offeringId);
         //Task<InstructorWeeklyCalendarViewModel> GetWeeklyCalendarAsync(string instructorId);
         //Task<InstructorAttendanceViewModel> GetManageAttendanceModelAsync(string instructorId, string? selectedCourseId = null, string? selectedSectionId = null, string? selectedMonth = null);
     }

@@ -1,0 +1,89 @@
+@model OmniFlex.Models.ViewModels.Instructor.InstructorPeopleViewModel
+
+<div class="container py-4" style="max-width: 800px;">
+    
+    <div class="mb-5">
+        <div class="d-flex justify-content-between align-items-center border-bottom border-primary border-2 pb-2 mb-3">
+            <h3 class="text-primary fw-normal m-0">Teachers</h3>
+            <i class="bi bi-person-plus text-primary fs-5" style="cursor:pointer;"></i>
+        </div>
+        <div class="d-flex align-items-center py-3 px-2">
+            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" 
+                 style="width: 40px; height: 40px; font-weight: 500;">
+                @Model.TeacherName.Substring(0, 1).ToUpper()
+            </div>
+            <div>
+                <span class="fw-bold d-block">@Model.TeacherName</span>
+                <small class="text-muted">@Model.TeacherEmail</small>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.TeachingAssistant != null)
+    {
+        <div class="mb-5">
+            <div class="d-flex justify-content-between align-items-center border-bottom border-success border-2 pb-2 mb-3">
+                <h3 class="text-success fw-normal m-0">Teaching Assistant</h3>
+            </div>
+            <div class="d-flex align-items-center py-3 px-2">
+                <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-3" 
+                     style="width: 40px; height: 40px; font-weight: 500;">
+                    @Model.TeachingAssistant.FullName.Substring(0, 1).ToUpper()
+                </div>
+                <div>
+                    <span class="fw-bold d-block">@Model.TeachingAssistant.FullName</span>
+                    <small class="text-muted">@Model.TeachingAssistant.Email (TA Account)</small>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="mb-5">
+        <div class="d-flex justify-content-between align-items-center border-bottom border-primary border-2 pb-2 mb-3">
+            <h3 class="text-primary fw-normal m-0">Students</h3>
+            <span class="text-muted small fw-bold">@Model.Students.Count students</span>
+        </div>
+
+        @if (Model.Students != null && Model.Students.Any())
+        {
+            <div class="list-group list-group-flush">
+                @foreach (var student in Model.Students.OrderBy(s => s.FullName))
+                {
+                    <div class="list-group-item d-flex align-items-center border-0 px-2 py-3 border-bottom">
+                        <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-3" 
+                             style="width: 35px; height: 35px; font-size: 0.9rem;">
+                            @student.FullName.Substring(0, 1).ToUpper()
+                        </div>
+                        <div class="flex-grow-1">
+                            <span class="d-block">@student.FullName</span>
+                            <small class="text-muted">@student.StudentId - @student.Email</small>
+                        </div>
+                        <div class="text-muted">
+                            <i class="bi bi-envelope small"></i>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <p class="text-muted">No students are currently enrolled.</p>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    /* Styling to mimic Google Classroom's clean list hover */
+    .list-group-item {
+        transition: background-color 0.2s;
+        background-color: transparent;
+    }
+    .list-group-item:hover {
+        background-color: #f8f9fa;
+    }
+    h3 {
+        letter-spacing: 0.5px;
+    }
+</style>
