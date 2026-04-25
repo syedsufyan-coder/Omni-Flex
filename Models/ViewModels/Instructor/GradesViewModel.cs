@@ -27,4 +27,28 @@ namespace OmniFlex.Models.ViewModels.Instructor
         // Key: AssignmentId, Value: Obtained Marks
         public Dictionary<int, decimal?> Grades { get; set; } = new();
     }
+
+    public class OnsiteExamViewModel
+    {
+        public int AssignmentId { get; set; }
+        public decimal TotalMarks { get; set; }
+
+        public List<OnsiteStudentRow> Students { get; set; } = new();
+    }
+
+    public class OnsiteStudentRow
+    {
+        public int EnrollmentId { get; set; }
+        public string StudentName { get; set; } = string.Empty;
+        public string StudentId { get; set; } = string.Empty;
+
+        // nullable because may not exist yet
+        public int? EntryId { get; set; }
+
+        public decimal? MarksObtained { get; set; }
+        public DateTime? ExamDate { get; set; }
+        public string? Remarks { get; set; }
+
+        public bool IsGraded => EntryId.HasValue;
+    }
 }

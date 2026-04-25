@@ -1,0 +1,77 @@
+@model OmniFlex.Models.ViewModels.Instructor.OnsiteExamViewModel
+
+<input type="hidden" id="gradingAssignmentId" value="@Model.AssignmentId" />
+
+<div class="p-3" id="assignmentDetailContent">
+
+  <!-- HEADER + BULK SAVE -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="fw-bold mb-0">Grade Physical Assessment</h5>
+
+    <button class="btn btn-success btn-sm" id="btnSaveAllOnsite">
+      <i class="bi bi-save me-1"></i>Save All
+    </button>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-sm align-middle">
+      
+      <thead class="table-light">
+        <tr>
+          <th>Student</th>
+          <th>Exam Date</th>
+          <th>Marks</th>
+          <th>Remarks</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        @foreach (var s in Model.Students)
+        {
+          <tr data-enroll-id="@s.EnrollmentId" data-entry-id="@s.EntryId">
+
+            <!-- Student -->
+            <td>
+              <div class="fw-semibold">@s.StudentName</div>
+              <div class="text-muted small">@s.StudentId</div>
+            </td>
+
+            <!-- Exam Date -->
+            <td>
+              <input type="date"
+                     class="form-control form-control-sm exam-date"
+                     value="@(s.ExamDate?.ToString("yyyy-MM-dd"))" />
+            </td>
+
+            <!-- Marks -->
+            <td>
+              <input type="number"
+                     class="form-control form-control-sm exam-marks"
+                     value="@s.MarksObtained"
+                     min="0"
+                     max="@Model.TotalMarks" />
+            </td>
+
+            <!-- Remarks -->
+            <td>
+              <input type="text"
+                     class="form-control form-control-sm exam-remarks"
+                     value="@s.Remarks"
+                     placeholder="Optional" />
+            </td>
+
+            <!-- Status -->
+            <td>
+              <span class="badge @(s.EntryId.HasValue ? "bg-success" : "bg-secondary") status-badge">
+                @(s.EntryId.HasValue ? "Graded" : "Pending")
+              </span>
+            </td>
+
+          </tr>
+        }
+      </tbody>
+
+    </table>
+  </div>
+</div>

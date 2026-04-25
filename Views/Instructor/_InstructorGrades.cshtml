@@ -1,102 +1,203 @@
 @model OmniFlex.Models.ViewModels.Instructor.GradesViewModel
 
+
+
 <div class="card shadow-sm border-0">
+
     <div class="card-body p-0">
+
         <div class="table-responsive" style="max-height: 700px;">
+
             <table class="table table-hover align-middle mb-0" style="min-width: 1000px;">
+
                 <thead class="bg-light">
+
                     <tr>
+
                         <th class="sticky-col first-col bg-light border-end" style="width: 250px;">
+
                             <div class="p-2 fw-bold text-muted">Student Details</div>
+
                         </th>
-                        
+
+                       
+
                         @foreach (var assn in Model.Assignments)
+
                         {
+
                             <th class="text-center border-end p-3" style="min-width: 150px;">
+
                                 <div class="small text-muted mb-1">
-                                    @(assn.DueDate?.ToString("dd MMM") ?? "No Date")
+
+                                    @(assn.DueDate?.ToString("dd MMM yyyy") ?? "No Date")
+
                                 </div>
+
                                 <div class="fw-bold text-dark text-truncate" style="max-width: 140px;" title="@assn.Title">
+
                                     @assn.Title
+
                                 </div>
+
                                 <div class="small text-primary mt-1">out of @assn.MaxMarks</div>
+
                             </th>
+
                         }
+
                     </tr>
+
                 </thead>
+
                 <tbody>
+
                     <tr class="bg-light font-monospace" style="border-bottom: 2px solid #dee2e6;">
+
                         <td class="sticky-col first-col bg-light border-end fw-bold ps-4">
+
                             Class Average
+
                         </td>
+
                         @foreach (var assn in Model.Assignments)
+
                         {
+
                             <td class="text-center border-end fw-bold text-success">
+
                                 @if (Model.AssignmentAverages.TryGetValue(assn.AssignmentId, out var avg) && avg.HasValue)
+
                                 {
+
                                     @avg.Value.ToString("N1")
+
                                 }
+
                                 else
+
                                 {
+
                                     <span class="text-muted">—</span>
+
                                 }
+
                             </td>
+
                         }
+
                     </tr>
+
+
 
                     @foreach (var student in Model.StudentRows.OrderBy(s => s.FullName))
+
                     {
+
                         <tr>
+
                             <td class="sticky-col first-col bg-white border-end ps-4 py-3">
+
                                 <div class="fw-semibold">@student.FullName</div>
+
                                 <div class="text-muted x-small" style="font-size: 0.75rem;">@student.StudentId</div>
+
                             </td>
+
                             @foreach (var assn in Model.Assignments)
+
                             {
+
                                 <td class="text-center border-end">
+
                                     @if (student.Grades.TryGetValue(assn.AssignmentId, out var obtained) && obtained.HasValue)
+
                                     {
+
                                         <span class="fw-bold text-dark">@obtained.Value.ToString("G29")</span>
+
                                         <span class="text-muted small">/@assn.MaxMarks</span>
+
                                     }
+
                                     else
+
                                     {
+
                                         <span class="text-muted opacity-50">_/@assn.MaxMarks</span>
+
                                     }
+
                                 </td>
+
                             }
+
                         </tr>
+
                     }
+
                 </tbody>
+
             </table>
+
         </div>
+
     </div>
+
 </div>
 
+
+
 <style>
+
     /* Google Classroom style sticky first column */
+
     .sticky-col {
+
         position: sticky;
+
         left: 0;
+
         z-index: 2;
+
     }
-    
+
+   
+
     .first-col {
+
         box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+
     }
+
+
 
     .table th {
+
         vertical-align: top;
+
         background-color: #f8f9fa;
+
     }
 
+
+
     /* Subtle hover effect for cells */
+
     .table-hover tbody tr:hover td {
+
         background-color: #f1f3f4;
+
     }
-    
+
+   
+
     /* Ensure the sticky col doesn't turn transparent on hover */
+
     .table-hover tbody tr:hover .sticky-col {
+
         background-color: #f1f3f4 !important;
+
     }
+
 </style>

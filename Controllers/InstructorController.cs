@@ -53,7 +53,8 @@ namespace OmniFlex.Controllers
             return View(model);
         }
 
-        public async Task<InstructorClassroomViewModel> GetClassroomMockData(string offeringId, string tab){
+        public async Task<InstructorClassroomViewModel> GetClassroomMockData(string offeringId, string tab)
+        {
             var model = new InstructorClassroomViewModel
             {
                 OfferingId = offeringId,
@@ -106,7 +107,7 @@ namespace OmniFlex.Controllers
                                 SubmitDate = DateTime.Now.AddDays(-1),
                                 ObtainedMarks = null,
                                 IsLate = "N",
-                                Locked = "N"
+                                IsLocked = false
                             }
                         }
                     },
@@ -130,7 +131,7 @@ namespace OmniFlex.Controllers
                     }
                 }
             };
-            
+
             return model;
         }
 
@@ -170,12 +171,6 @@ namespace OmniFlex.Controllers
         }
 
         [HttpPost]
-        public IActionResult AddPost([FromBody] CreatePostViewModel model)
-        {
-            return Json(new { success = true, message = "Post added (stub)." });
-        }
-
-        [HttpPost]
         public IActionResult AddAssessment([FromBody] CreateAssignmentViewModel model)
         {
             return Json(new { success = true, message = "Assessment added (stub)." });
@@ -211,27 +206,120 @@ namespace OmniFlex.Controllers
                         SubmitDate = DateTime.Now.AddDays(-1),
                         ObtainedMarks = null,
                         IsLate = "N",
-                        Locked = "N"
+                        IsLocked = false
                     }
                 }
             };
             return PartialView("_InstructorAssignmentDetail", model);
         }
-/*
-        public async Task<IActionResult> WeeklyCalendar()
+
+        [HttpGet("Instructor/GradeAssignment/{assignmentId}")]
+        public async Task<IActionResult> GradeAssignment(int assignmentId)
         {
-            var model = await _instructor.GetWeeklyCalendarAsync("I005");
-            ViewData["ActivePage"] = "WeeklyCalendar";
-            ViewData["PageTitle"] = "Weekly Calendar";
-            return View(model);
+            var model = await _instructor.GetInstructorAssignmentDetailsAsync(assignmentId);
+            if (model.DeliveryMode == "Physical")
+            {
+                // EnrollmentId is already present in the following model
+                var examEntry = await _instructor.GetOnsiteAssignmentDetailsAsync(model.OfferingId, assignmentId);
+                return PartialView("_GradeOnsite", examEntry);
+            }
+
+            return PartialView("_GradeOnline", model);
+        }
+        [HttpPost]
+        public async Task<IActionResult> BulkGradeOnsite([FromBody] List<OmniFlex.Models.Domain.Instructor.Exam> models)
+        {
+            if (models == null || !models.Any()) return BadRequest();
+
+            // 1. Prepare Metadata (Audit Fields)
+            var currentUser = "U003";
+            // TODO: We will remove this because this will be fetched from user identity once authentication is implemented
+
+            var currentTime = DateTime.Now;
+
+            foreach (var m in models)
+            {
+                // Set info for Inserts
+                m.EnteredBy = currentUser;
+                m.EnteredAt = currentTime;
+                // Set info for Updates
+                //m.UpdatedBy = currentUser;
+                //m.UpdatedAt = currentTime;
+            }
+
+            // 2. Call Repository
+            var updatedList = await _instructor.BulkUpsertGradesAsync(models);
+
+            // 3. Project back to the specific JSON format your JS expects
+            var response = updatedList.Select(x => new
+            {
+                enrollmentId = x.EnrollmentId,
+                entryId = x.EntryId
+            });
+
+            return Json(new { success = true, updated = response });
+        }
+        [HttpPost]
+        public async Task<IActionResult> AddPost([FromBody] PostDto model)
+        {
+            if (model == null || string.IsNullOrEmpty(model.Title))
+                return Json(new { success = false, message = "Title is required." });
+
+            // TODO: Remove hardcoded PostedBy once Auth is implemented
+            const string hardcodedUserId = "U003";
+            // TODO: Remove it once you implement Auth and fetch real user info
+
+            try
+            {
+                var post = new OmniFlex.Models.Domain.Instructor.CoursePost
+                {
+                    OfferingId = model.OfferingId,
+                    PostType = model.PostType,
+                    Title = model.Title,
+                    Content = model.Body, // Mapping JS 'Body' to Model 'Content'
+                    PostedBy = hardcodedUserId, // Placeholder until you add Auth
+                    CreatedAt = DateTime.Now
+                };
+
+                int newId = await _instructor.AddCoursePostAsync(post);
+
+                return Json(new
+                {
+                    success = true,
+                    message = "Post created successfully!",
+                    postId = newId
+                });
+            }
+            catch (Exception ex)
+            {
+                // For debugging, you might want to return ex.Message temporarily
+                return Json(new { success = false, message = "Database Error: " + ex.Message });
+            }
         }
 
-        public async Task<IActionResult> ManageAttendance(string? selectedCourseId = null, string? selectedSectionId = null, string? selectedMonth = null)
+        // Data Transfer Object to match your JSON payload
+        public class PostDto
         {
-            var model = await _instructor.GetManageAttendanceModelAsync("I005", selectedCourseId, selectedSectionId, selectedMonth);
-            ViewData["ActivePage"] = "ManageAttendance";
-            ViewData["PageTitle"] = "Manage Attendance";
-            return View(model);
-        }*/
+            public string OfferingId { get; set; } = string.Empty;
+            public string PostType { get; set; } = string.Empty;
+            public string Title { get; set; } = string.Empty;
+            public string Body { get; set; } = string.Empty;
+        }
+        /*
+                public async Task<IActionResult> WeeklyCalendar()
+                {
+                    var model = await _instructor.GetWeeklyCalendarAsync("I005");
+                    ViewData["ActivePage"] = "WeeklyCalendar";
+                    ViewData["PageTitle"] = "Weekly Calendar";
+                    return View(model);
+                }
+
+                public async Task<IActionResult> ManageAttendance(string? selectedCourseId = null, string? selectedSectionId = null, string? selectedMonth = null)
+                {
+                    var model = await _instructor.GetManageAttendanceModelAsync("I005", selectedCourseId, selectedSectionId, selectedMonth);
+                    ViewData["ActivePage"] = "ManageAttendance";
+                    ViewData["PageTitle"] = "Manage Attendance";
+                    return View(model);
+                }*/
     }
 }

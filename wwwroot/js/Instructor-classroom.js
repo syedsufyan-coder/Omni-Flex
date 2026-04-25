@@ -44,6 +44,9 @@ $(document).ready(function () {
         }
     });
 
+    // Removing original code for adding post
+    // Because we replace with a new and custom one that matches our new model and API contract
+    /*
     $(document).on('click', '#btnSubmitPost', function () {
         const payload = {
             OfferingId: $('#postOfferingId').val(),
@@ -76,12 +79,171 @@ $(document).ready(function () {
             }
         });
     });
+    */
+
+    //Critical Section because we replace with a new and custom code for adding post
+    $(document).on('click', '#btnSubmitPost', function () {
+        const $btn = $(this);
+
+        const payload = {
+            OfferingId: $('#postOfferingId').val(),
+            PostType: $('#postType').val(),
+            Title: $('#postTitle').val(),
+            Body: $('#postBody').val()
+        };
+
+        // Simple Client-side Validation
+        if (!payload.PostType || !payload.Title || !payload.Body) {
+            alert('Please complete all required fields.');
+            return;
+        }
+
+        // Visual feedback
+        $btn.prop('disabled', true).text('Posting...');
+
+        $.ajax({
+            url: '/Instructor/AddPost',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(payload),
+            success: function (response) {
+                if (response.success) {
+                    // Close Modal
+                    $('#addPostModal').modal('hide');
+
+                    // Clear inputs for next time
+                    $('#postType, #postTitle, #postBody').val('');
+
+                    // Refresh the stream (triggers your existing tab click logic)
+                    $('#classroomTabs .nav-link[data-tab="stream"]').trigger('click');
+                } else {
+                    alert(response.message || 'Error occurred.');
+                    $btn.prop('disabled', false).text('Post');
+                }
+            },
+            error: function () {
+                alert('Server communication error.');
+                $btn.prop('disabled', false).text('Post');
+            }
+        });
+    });
+
+    // Critical Section because we add the jQuery custom
+    // =========================
+    // Assessment UI Rules Engine
+    // =========================
+
+    function resetAssessmentFields() {
+        $('#assessmentActualWtg').prop('disabled', false);
+        $('#assessmentGradingGroup').prop('disabled', false).val('');
+        $('#assessmentCountBestOf').prop('disabled', false).val('');
+        $('#assessmentIsGraded').prop('disabled', false);
+    }
+
+    function applyOnsiteRules() {
+        const category = $('#assessmentCategorySelect').val();
+
+        resetAssessmentFields();
+
+        if (category === 'Quiz') {
+            // Free weight
+            $('#assessmentActualWtg').val('').prop('disabled', false);
+
+            // Lock grading group
+            $('#assessmentGradingGroup')
+                .val('Quiz')
+                .prop('disabled', true);
+
+            $('#assessmentCountBestOf').prop('disabled', false);
+            $('#assessmentIsGraded').prop('disabled', false);
+        }
+
+        else if (category === 'Mid I' || category === 'Mid II') {
+            $('#assessmentActualWtg')
+                .val(15)
+                .prop('disabled', true);
+
+            $('#assessmentGradingGroup')
+                .val('')
+                .prop('disabled', true);
+
+            $('#assessmentCountBestOf')
+                .val('')
+                .prop('disabled', true);
+
+            $('#assessmentIsGraded')
+                .val('Y')
+                .prop('disabled', true);
+        }
+
+        else if (category === 'Final') {
+            $('#assessmentActualWtg')
+                .val(50)
+                .prop('disabled', true);
+
+            $('#assessmentGradingGroup')
+                .val('')
+                .prop('disabled', true);
+
+            $('#assessmentCountBestOf')
+                .val('')
+                .prop('disabled', true);
+
+            $('#assessmentIsGraded')
+                .val('Y')
+                .prop('disabled', true);
+        }
+    }
+
+    function handleDeliveryModeChange() {
+        const mode = $('#assessmentDeliveryMode').val();
+
+        if (mode === 'Onsite') {
+            $('#assessmentCategorySelect').removeClass('d-none');
+            $('#assessmentCategoryText').addClass('d-none');
+
+            applyOnsiteRules();
+        } else {
+            // ONLINE → everything free
+            $('#assessmentCategorySelect').addClass('d-none');
+            $('#assessmentCategoryText').removeClass('d-none');
+
+            resetAssessmentFields();
+        }
+    }
+
+    // Events
+    $(document).on('change', '#assessmentDeliveryMode', handleDeliveryModeChange);
+    $(document).on('change', '#assessmentCategorySelect', applyOnsiteRules);
+
+
+    //
 
     $(document).on('click', '#btnSubmitAssessment', function () {
         const deliveryMode = $('#assessmentDeliveryMode').val();
         const category = deliveryMode === 'Onsite'
             ? $('#assessmentCategorySelect').val()
             : $('#assessmentCategoryText').val();
+
+        // Critical Section -- Custom validation logic
+
+        // Clean disabled fields before submit
+        if ($('#assessmentDeliveryMode').val() === 'Onsite') {
+            const category = $('#assessmentCategorySelect').val();
+
+            if (category === 'Mid I' || category === 'Mid II' || category === 'Final') {
+                $('#assessmentGradingGroup').val('');
+                $('#assessmentCountBestOf').val('');
+            }
+
+            if (category === 'Quiz') {
+                $('#assessmentGradingGroup').val('Quiz');
+            }
+        }
+
+        // =============================
+
+
 
         const payload = {
             OfferingId: $('#assessmentOfferingId').val(),
@@ -134,10 +296,114 @@ $(document).ready(function () {
         });
     });
 
-    $(document).on('click', '.btn-grade-assignment', function () {
+    // We remove this original code
+    /*$(document).on('click', '.btn-grade-assignment', function () {
         const assignmentId = $(this).data('assignment-id');
         window.location.href = `/Instructor/Grade/${assignmentId}`;
+    });*/
+
+    // Critical Section because we replace with a new and custom one
+
+    $(document).on('click', '.btn-grade-assignment', function () {
+        const assignmentId = $(this).data('assignment-id');
+
+        $('#assignmentDetailOffcanvas').offcanvas('show');
+        $('#assignmentDetailContent').html(`
+        <div class="text-center py-5 text-muted">
+            <div class="spinner-border"></div>
+        </div>`);
+
+        $.get(`/Instructor/GradeAssignment/${assignmentId}`, function (html) {
+            $('#assignmentDetailContent').html(html);
+        });
     });
+    // ==================
+
+    // =============== NEW FUNCTION FOR GRADING ONSITE EXAMS ===============
+    $(document).on('click', '#btnSaveAllOnsite', function () {
+
+        const rows = [];
+        let hasError = false;
+
+        $('#assignmentDetailContent tbody tr').each(function () {
+
+            const row = $(this);
+
+            const enrollId = row.data('enroll-id');
+            const entryId = row.data('entry-id') || 0;
+
+            const marksInput = row.find('.exam-marks');
+            const marks = parseFloat(marksInput.val());
+            const max = parseFloat(marksInput.attr('max'));
+
+            // Skip empty rows (optional)
+            if (!marks && marks !== 0) return;
+
+            if (marks > max) {
+                marksInput.addClass('is-invalid');
+                hasError = true;
+                return;
+            }
+
+            marksInput.removeClass('is-invalid');
+
+            rows.push({
+                EntryId: entryId,
+                AssignmentId: parseInt($('#gradingAssignmentId').val()),
+                EnrollmentId: enrollId, // This maps to ENROLL_ID in my SQL above
+                MarksObtained: marks,
+                ExamDate: row.find('.exam-date').val() || null, // Handle empty dates
+                Remarks: row.find('.exam-remarks').val()
+            });
+
+        });
+
+        if (hasError) {
+            alert('Some marks exceed allowed total.');
+            return;
+        }
+
+        if (rows.length === 0) {
+            alert('Nothing to save.');
+            return;
+        }
+
+        const btn = $(this);
+        btn.prop('disabled', true).text('Saving...');
+
+        $.ajax({
+            url: '/Instructor/BulkGradeOnsite',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(rows),
+
+            success: function (res) {
+
+                btn.text('Saved');
+
+                // Update UI
+                res.updated.forEach(x => {
+                    const row = $(`tr[data-enroll-id="${x.enrollmentId}"]`);
+
+                    // update entryId if newly inserted
+                    row.attr('data-entry-id', x.entryId);
+
+                    // update badge
+                    row.find('.status-badge')
+                        .removeClass('bg-secondary')
+                        .addClass('bg-success')
+                        .text('Graded');
+                });
+            },
+
+            error: function () {
+                btn.prop('disabled', false).text('Save All');
+                alert('Error saving grades');
+            }
+        });
+    });
+
+    // =====================
 
     $(document).on('click', '.btn-toggle-post', function () {
         const targetId = $(this).data('target');

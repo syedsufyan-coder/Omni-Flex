@@ -7,6 +7,7 @@ namespace OmniFlex.Models.ViewModels.Instructor
     {
         public int AssignmentId { get; set; }
         public string OfferingId { get; set; } = string.Empty;
+        public int EnrollId { get; set; }
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public string DeliveryMode { get; set; } = string.Empty;
