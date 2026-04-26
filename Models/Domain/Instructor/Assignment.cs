@@ -13,5 +13,7 @@ namespace OmniFlex.Models.Domain.Instructor
         public string IsGraded { get; set; } = "Y";   // "Y" or "N"
         public string GradingGroup { get; set; } = string.Empty;
         public int? CountBestOf { get; set; }
+        public string CreatedBy { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
     }
 }

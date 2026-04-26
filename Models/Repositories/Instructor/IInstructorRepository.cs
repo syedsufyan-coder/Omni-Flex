@@ -17,6 +17,7 @@ namespace OmniFlex.Models.Repositories.Instructor
         Task<OnsiteExamViewModel> GetOnsiteAssignmentDetailsAsync(string offeringId, int assignmentId);
         Task<IEnumerable<Exam>> BulkUpsertGradesAsync(List<Exam> entries);
         Task<int> AddCoursePostAsync(CoursePost post);
+        Task<int> AddAssignmentAsync(Assignment assignment);
         Task<int> GradeAssignmentPhysicalAsync(int assignmentId, int enrollmentId, string teacherId, decimal marksObtained, string remarks, DateTime ExamDate);
         //Task<InstructorWeeklyCalendarViewModel> GetWeeklyCalendarAsync(string instructorId);
         //Task<InstructorAttendanceViewModel> GetManageAttendanceModelAsync(string instructorId, string? selectedCourseId = null, string? selectedSectionId = null, string? selectedMonth = null);

@@ -171,9 +171,54 @@ namespace OmniFlex.Controllers
         }
 
         [HttpPost]
-        public IActionResult AddAssessment([FromBody] CreateAssignmentViewModel model)
+        public async Task<IActionResult> AddAssessment([FromBody] OmniFlex.Models.Domain.Instructor.Assignment model)
         {
-            return Json(new { success = true, message = "Assessment added (stub)." });
+            if (model == null || string.IsNullOrEmpty(model.Title))
+                return Json(new { success = false, message = "Required fields are missing." });
+
+            // TODO: Use real User ID from Auth
+            const string hardcodedUserId = "U003";
+
+            // Delivery Mode is handled here
+            if(string.Equals(model.DeliveryMode,"onsite", StringComparison.OrdinalIgnoreCase))
+            {
+                model.DeliveryMode = "Physical"; // Because of DB constraint
+            }
+
+            try
+            {
+                var assessment = new OmniFlex.Models.Domain.Instructor.Assignment
+                {
+                    OfferingId = model.OfferingId,
+                    Title = model.Title,
+                    Description = model.Description,
+                    DeliveryMode = model.DeliveryMode,
+                    DueDate = model.DueDate,
+                    Category = model.Category,
+                    TotalMarks = model.TotalMarks,
+                    ActualWtg = model.ActualWtg,
+                    // Handling the 'Y'/'N' string to bool or keeping it as string 
+                    // based on your table definition (CHAR(1))
+                    IsGraded = model.IsGraded,
+                    GradingGroup = model.GradingGroup,
+                    CountBestOf = model.CountBestOf,
+                    CreatedBy = hardcodedUserId,
+                    CreatedAt = DateTime.Now
+                };
+
+                int newId = await _instructor.AddAssignmentAsync(assessment);
+
+                return Json(new
+                {
+                    success = true,
+                    message = "Assessment added successfully!",
+                    assessmentId = newId
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error: " + ex.Message });
+            }
         }
 
         [HttpGet("Instructor/AssignmentDetail/{assignmentId}")]
