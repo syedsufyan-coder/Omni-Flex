@@ -579,6 +579,62 @@ namespace OmniFlex.Models.Repositories.Instructor
 
             return p.Get<int>("outId");
         }
+
+        public async Task<int> AddAssignmentAsync(Assignment assignment)
+        {
+            using var conn = _factory.CreateConnection();
+            conn.Open();
+            using (var connection = _factory.CreateConnection())
+            {
+                await connection.OpenAsync(); // Ensure connection is open for transaction
+                using (var transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        string sql = @"
+                    INSERT INTO ASSIGNMENTS (
+                        OFFERING_ID, TITLE, DESCRIPTION, DELIVERY_MODE, 
+                        DUE_DATE, CATEGORY, TOTAL_MARKS, ACTUAL_WTG, 
+                        IS_GRADED, GRADING_GROUP, COUNT_BEST_OF, CREATED_BY, CREATED_AT
+                    ) VALUES (
+                        :OfferingId, :Title, :Description, :DeliveryMode, 
+                        :DueDate, :Category, :TotalMarks, :ActualWeightage, 
+                        :IsGradedStr, :GradingGroup, :CountBestOf, :CreatedBy, :CreatedAt
+                    ) RETURNING ASSIGNMENT_ID INTO :AssignmentId";
+
+                        var parameters = new DynamicParameters();
+                        parameters.Add("OfferingId", assignment.OfferingId);
+                        parameters.Add("Title", assignment.Title);
+                        parameters.Add("Description", assignment.Description);
+                        parameters.Add("DeliveryMode", assignment.DeliveryMode);
+                        parameters.Add("DueDate", assignment.DueDate);
+                        parameters.Add("Category", assignment.Category);
+                        parameters.Add("TotalMarks", assignment.TotalMarks);
+                        parameters.Add("ActualWeightage", assignment.ActualWeightage);
+                        // Database is CHAR(1), map bool to 'Y'/'N'
+                        parameters.Add("IsGradedStr", assignment.IsGraded ? "Y" : "N");
+                        parameters.Add("GradingGroup", assignment.GradingGroup);
+                        parameters.Add("CountBestOf", assignment.CountBestOf);
+                        parameters.Add("CreatedBy", assignment.CreatedBy);
+                        parameters.Add("CreatedAt", assignment.CreatedAt);
+                        parameters.Add("AssignmentId", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+                        // Pass the transaction here
+                        await connection.ExecuteAsync(sql, parameters, transaction: transaction);
+
+                        int newId = parameters.Get<int>("AssignmentId");
+
+                        transaction.Commit();
+                        return newId;
+                    }
+                    catch (Exception)
+                    {
+                        transaction.Rollback();
+                        throw; // Re-throw to be caught by the Controller
+                    }
+                }
+            }
+        }
         /*
                 public async Task<List<InstructorCourseCard>> GetCoursesAsync(string instructorId)
                 {
