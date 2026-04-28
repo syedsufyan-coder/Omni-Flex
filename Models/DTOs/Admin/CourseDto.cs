@@ -3,7 +3,7 @@ using System;
 namespace OmniFlex.Models.DTOs{
     public class CourseDto
     {
-        public int CourseId { get; set; }
+        public string CourseId { get; set; } = string.Empty;
         public string CourseName { get; set; } = string.Empty;
         public string CreditHours { get; set; } = string.Empty;
         public string CourseType { get; set; } = string.Empty;

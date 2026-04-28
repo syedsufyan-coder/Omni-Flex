@@ -41,7 +41,16 @@ else
           </div>
           <div class="text-end">
             <div class="fw-bold text-primary">@assignment.TotalMarks pts</div>
-            <div class="text-muted small">@assignment.SubmissionCount / @assignment.TotalEnrolled submitted</div>
+            @{
+              if (assignment.DeliveryMode == "Online")
+              {
+                <div class="text-muted small">@assignment.SubmissionCount / @assignment.TotalEnrolled Submitted</div>
+              }
+              else
+              {
+                <div class="text-muted small">@assignment.SubmissionCount / @assignment.TotalEnrolled Graded</div>
+              }
+            }
           </div>
         </div>
 

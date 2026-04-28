@@ -5,13 +5,14 @@
     <div>
       <h5 class="fw-bold mb-1">@Model.Title</h5>
       <div class="text-muted small">
-        <span class="badge @(Model.DeliveryMode == "Onsite" ? "bg-warning text-dark" : "bg-primary") me-1">@Model.DeliveryMode</span>
+        <span
+        class="badge @(Model.DeliveryMode == "Onsite" ? "bg-warning text-dark" : "bg-primary") me-1">@Model.DeliveryMode</span>
         <span class="badge bg-light text-dark border">@Model.Category</span>
       </div>
     </div>
     <div class="text-end">
       <div class="fw-bold text-primary fs-5">@Model.TotalMarks Marks</div>
-        <div class="text-muted small">@Model.ActualWtg Weightage</div>
+      <div class="text-muted small">@Model.ActualWtg Weightage</div>
       @if (Model.DueDate.HasValue)
       {
         <div class="text-muted small">Due @Model.DueDate.Value.ToString("dd MMM yyyy")</div>
@@ -21,16 +22,35 @@
 
   <div class="card bg-light border-0 mb-3 p-3">
     <div class="fw-semibold small text-muted mb-1">DESCRIPTION</div>
-    <p class="mb-0">@(!string.IsNullOrWhiteSpace(Model.Description) ? Model.Description : "No description provided.")</p>
+    <p class="mb-0">@(!string.IsNullOrWhiteSpace(Model.Description) ? Model.Description : "No description provided.")
+    </p>
   </div>
 
   <div class="card border-0 shadow-sm mb-3">
     <div class="card-body">
-      <div class="fw-semibold small text-muted mb-2">SUBMISSION SUMMARY</div>
+      @{
+        if (Model.DeliveryMode == "Online")
+        {
+          <div class="fw-semibold small text-muted mb-2">SUBMISSION SUMMARY</div>
+        }
+        else
+        {
+          <div class="fw-semibold small text-muted mb-2">MARKS ASSIGNED SUMMARY</div>
+        }
+      }
       <div class="row text-center g-2">
         <div class="col-4">
           <div class="fw-bold fs-4 text-success">@Model.SubmissionCount</div>
-          <div class="text-muted small">Submitted</div>
+          @{
+            if (Model.DeliveryMode == "Online")
+            {
+              <div class="text-muted small">Submitted</div>
+            }
+            else
+            {
+              <div class="text-muted small">Graded</div>
+            }
+          }
         </div>
         <div class="col-4">
           <div class="fw-bold fs-4 text-danger">@(Model.TotalEnrolled - Model.SubmissionCount)</div>
@@ -43,61 +63,75 @@
       </div>
     </div>
   </div>
-
-  <div class="fw-semibold small text-muted mb-2">SUBMISSIONS</div>
-  @if (!Model.Submissions.Any())
-  {
-    <div class="text-center text-muted py-4">
-      <i class="bi bi-inbox display-4"></i>
-      <p class="mt-2 small">No submissions yet.</p>
-    </div>
-  }
-  else
-  {
-    <div class="table-responsive">
-      <table class="table table-sm table-hover align-middle mb-0">
-        <thead class="table-light">
-          <tr>
-            <th>Student</th>
-            <th>Submitted</th>
-            <th>Late</th>
-            <th>Marks</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          @foreach (var submission in Model.Submissions)
-          {
-            <tr>
-              <td>
-                <div class="fw-semibold">@submission.StudentName</div>
-                <div class="text-muted small">@submission.StudentId</div>
-              </td>
-              <td class="small">@submission.SubmitDate?.ToString("dd MMM, hh:mm tt")</td>
-              <td>
-                <span class="badge @(submission.IsLate == "Y" ? "bg-warning text-dark" : "bg-success")">
-                  @(submission.IsLate == "Y" ? "Late" : "On time")
-                </span>
-              </td>
-              <td>
-                @if (submission.IsGraded)
-                {
-                  <span class="fw-semibold text-success">@submission.ObtainedMarks</span>
-                }
-                else
-                {
-                  <span class="text-muted small">Not graded</span>
-                }
-              </td>
-              <td>
-                <button class="btn btn-sm btn-outline-success btn-grade-submission" data-submission-id="@submission.SubmissionId">
-                  <i class="bi bi-award"></i>
-                </button>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
+  @{
+    if (Model.DeliveryMode == "Online")
+    {
+      <div class="fw-semibold small text-muted mb-2">SUBMISSIONS</div>
+      @if (!Model.Submissions.Any())
+      {
+        <div class="text-center text-muted py-4">
+          <i class="bi bi-inbox display-4"></i>
+          <p class="mt-2 small">No submissions yet.</p>
+        </div>
+      }
+      else
+      {
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Student</th>
+                <th>Submitted</th>
+                <th>Late</th>
+                <th>Marks</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @foreach (var submission in Model.Submissions)
+              {
+                <tr>
+                  <td>
+                    <div class="fw-semibold">@submission.StudentName</div>
+                    <div class="text-muted small">@submission.StudentId</div>
+                  </td>
+                  <td class="small">@submission.SubmitDate?.ToString("dd MMM, hh:mm tt")</td>
+                  <td>
+                    <span class="badge @(submission.IsLate == "Y" ? "bg-warning text-dark" : "bg-success")">
+                      @(submission.IsLate == "Y" ? "Late" : "On time")
+                    </span>
+                  </td>
+                  <td>
+                    @if (submission.IsGraded)
+                    {
+                      <span class="fw-semibold text-success">@submission.ObtainedMarks</span>
+                    }
+                    else
+                    {
+                      <span class="text-muted small">Not graded</span>
+                    }
+                  </td>
+                  <td>
+                    <button class="btn btn-sm btn-outline-success btn-grade-submission"
+                            data-submission-id="@submission.SubmissionId">
+                      <i class="bi bi-award"></i>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+    else
+    {
+      <div class="fw-semibold small text-muted mb-2">GRADES</div>
+      <div class="text-center text-muted py-4">
+          <i class="bi bi-award display-4"></i>
+          <p class="mt-2">This is a Physical Assignment</p>
+          <p class="mt-2 small">Please go to the grading section to view and update grades.</p>
+        </div>
+    }
   }
 </div>

@@ -27,7 +27,9 @@ builder.Services.AddScoped<OmniFlex.Models.Repositories.Admin.IAttendanceReposit
 builder.Services.AddScoped<OmniFlex.Models.Repositories.Admin.IResultRepository, OmniFlex.Models.Repositories.Admin.ResultRepository>();
 builder.Services.AddScoped<OmniFlex.Models.Repositories.Instructor.IInstructorRepository, OmniFlex.Models.Repositories.Instructor.InstructorRepository>();
 
-var app = builder.Build();
+try 
+{
+    var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -61,3 +63,11 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
+
+} 
+catch (Exception ex) 
+{
+    // Check ex.Message and ex.InnerException.Message
+    Console.WriteLine(ex.Message); 
+    throw;
+}

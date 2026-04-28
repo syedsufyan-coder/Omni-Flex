@@ -180,7 +180,7 @@ namespace OmniFlex.Controllers
             const string hardcodedUserId = "U003";
 
             // Delivery Mode is handled here
-            if(string.Equals(model.DeliveryMode,"onsite", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(model.DeliveryMode, "onsite", StringComparison.OrdinalIgnoreCase))
             {
                 model.DeliveryMode = "Physical"; // Because of DB constraint
             }
@@ -350,21 +350,77 @@ namespace OmniFlex.Controllers
             public string Title { get; set; } = string.Empty;
             public string Body { get; set; } = string.Empty;
         }
-        /*
-                public async Task<IActionResult> WeeklyCalendar()
-                {
-                    var model = await _instructor.GetWeeklyCalendarAsync("I005");
-                    ViewData["ActivePage"] = "WeeklyCalendar";
-                    ViewData["PageTitle"] = "Weekly Calendar";
-                    return View(model);
-                }
 
-                public async Task<IActionResult> ManageAttendance(string? selectedCourseId = null, string? selectedSectionId = null, string? selectedMonth = null)
-                {
-                    var model = await _instructor.GetManageAttendanceModelAsync("I005", selectedCourseId, selectedSectionId, selectedMonth);
-                    ViewData["ActivePage"] = "ManageAttendance";
-                    ViewData["PageTitle"] = "Manage Attendance";
-                    return View(model);
-                }*/
+        /*public async Task<IActionResult> WeeklyCalendar()
+        {
+            var model = await _instructor.GetWeeklyCalendarAsync("I005");
+            ViewData["ActivePage"] = "WeeklyCalendar";
+            ViewData["PageTitle"] = "Weekly Calendar";
+            return View(model);
+        }*/
+
+        public async Task<IActionResult> ManageAttendance(string? selectedCourseId = null, string? selectedSectionId = null, string? selectedMonth = null)
+        {
+            var model = await _instructor.GetManageAttendanceModelAsync("U003", selectedCourseId, selectedSectionId, selectedMonth);
+            ViewData["ActivePage"] = "ManageAttendance";
+            ViewData["PageTitle"] = "Manage Attendance";
+            return View(model);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> BulkAddAttendance([FromBody] BulkAddAttendanceRequest request)
+        {
+            // TODO: maybe define some logic in the following function called
+            var enrollIds = await _instructor.GetEnrollmentIDsForAttendace(request.CourseId, request.SectionId);
+
+            if (enrollIds == null || !enrollIds.Any())
+            {
+                return Json(new { success = false, message = "No students enrolled in this section." });
+            }
+
+            var currentUser = "U003"; // Hardcoded for now per your logic
+            var currentTime = DateTime.Now;
+
+            var attendances = enrollIds.Select(enrollId => new OmniFlex.Models.Domain.Instructor.Attendance
+            {
+                EnrollId = enrollId,
+                AttendanceDate = currentTime,
+                Status = request.DefaultStatus,
+                MarkedBy = currentUser,
+                Duration = request.Duration
+            }).ToList();
+
+            // Call the Repository
+            var resultList = await _instructor.BulkAddAttendanceRecordsAsync(attendances);
+
+            var returnedRecords = resultList.Select(a => new
+            {
+                enrollId = a.EnrollId,
+                attendanceId = a.AttendanceId
+            });
+
+            return Json(new
+            {
+                success = true,
+                dateLabel = currentTime.ToString("dd-MMM"),
+                records = returnedRecords
+            });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdateSingleStatus([FromBody] UpdateAttendanceStatusRequest request)
+        {
+            if (request == null || request.AttendanceId <= 0) return BadRequest();
+
+            // Use the repository to update the status
+            bool isUpdated = await _instructor.UpdateAttendanceStatusAsync(request.AttendanceId, request.Status);
+
+            if (!isUpdated)
+            {
+                return NotFound(new { message = "Attendance record not found." });
+            }
+
+            return Ok();
+        }
     }
 }

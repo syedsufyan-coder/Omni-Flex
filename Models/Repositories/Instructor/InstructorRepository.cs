@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Globalization;
 using Dapper;
 using OmniFlex.Infrastructure;
 using OmniFlex.Models.DTOs;
@@ -17,9 +18,15 @@ namespace OmniFlex.Models.Repositories.Instructor
     {
 
         private readonly DbConnectionFactory _factory;
+        private readonly ICourseRepository _courses;
+        private readonly ISectionRepository _sections;
 
-        public InstructorRepository(DbConnectionFactory factory)
-            => _factory = factory;
+        public InstructorRepository(DbConnectionFactory factory, ICourseRepository courses, ISectionRepository sections)
+        {
+            _factory = factory;
+            _courses = courses;
+            _sections = sections;
+        }
 
         public async Task<InstructorDashboardViewModel> GetDashboardAsync(string instructorId)
         {
@@ -308,6 +315,14 @@ namespace OmniFlex.Models.Repositories.Instructor
                             WHERE SUB.ASSIGNMENT_ID IN :AssignmentIds
                             ORDER BY ST.FIRST_NAME";
 
+            // Use UNION ALL to get counts from both tables in one go
+            const string sql_submission_counts = @"
+                        SELECT ASSIGNMENT_ID, COUNT(*) as TotalCount FROM (
+                            SELECT ASSIGNMENT_ID FROM SUBMISSIONS WHERE ASSIGNMENT_ID IN :Ids
+                            UNION ALL
+                            SELECT ASSIGNMENT_ID FROM EXAM_ENTRIES WHERE ASSIGNMENT_ID IN :Ids
+                        ) GROUP BY ASSIGNMENT_ID";
+
             using var conn = _factory.CreateConnection();
             conn.Open();
             var classroomInfo = await conn.QueryFirstOrDefaultAsync<InstructorClassroomViewModel>(sql_classroom, new { OfferingId = offeringId });
@@ -319,6 +334,24 @@ namespace OmniFlex.Models.Repositories.Instructor
             var assignments = await conn.QueryAsync<InstructorAssignmentViewModel>(sql_assignments, new { OfferingId = offeringId });
             // 1. Extract IDs
             var assignmentIds = assignments.Select(a => a.AssignmentId).ToArray();
+
+            // Get submission counts for all assignments
+            // Dapper handles the 'IN :Ids' array automatically
+            var counts = await conn.QueryAsync<(int AssignmentId, int TotalCount)>(sql_submission_counts, new { Ids = assignmentIds });
+            // Convert to Dictionary for O(1) lookups
+            var countMap = counts.ToDictionary(x => x.AssignmentId, x => x.TotalCount);
+
+            foreach (var assignment in assignments)
+            {
+                if (countMap.TryGetValue(assignment.AssignmentId, out int count))
+                {
+                    assignment.SubmissionCount = count;
+                }
+                else
+                {
+                    assignment.SubmissionCount = 0;
+                }
+            }
 
             // 2. Guard against empty collections to prevent SQL syntax errors
             IEnumerable<InstructorSubmissionSummaryViewModel> submissions = new List<InstructorSubmissionSummaryViewModel>();
@@ -418,9 +451,21 @@ namespace OmniFlex.Models.Repositories.Instructor
                 FROM ASSIGNMENTS A
                 WHERE A.ASSIGNMENT_ID = :assignmentId";
 
+            const string sql_submission_count_onsite = @"SELECT 
+                            COUNT(DISTINCT ENROLL_ID) AS TotalSubmissions 
+                            FROM EXAM_ENTRIES 
+                            WHERE ASSIGNMENT_ID = :AssignmentId";
+
             using var conn = _factory.CreateConnection();
             conn.Open();
             var assignment = await conn.QueryFirstOrDefaultAsync<InstructorAssignmentViewModel>(sql, new { assignmentId = assignmentId });
+
+            if (string.Equals(assignment?.DeliveryMode, "Physical", StringComparison.OrdinalIgnoreCase))
+            {
+                var counts = await conn.QueryAsync<int>(sql_submission_count_onsite, new { AssignmentId = assignmentId });
+                assignment.SubmissionCount = counts.FirstOrDefault(); // Should only be one row, but we use FirstOrDefault to be safe
+            }
+
             return assignment ?? new InstructorAssignmentViewModel();
         }
 
@@ -630,105 +675,162 @@ namespace OmniFlex.Models.Repositories.Instructor
                 throw; // Re-throw to be caught by the Controller
             }
         }
-        /*
-                public async Task<List<InstructorCourseCard>> GetCoursesAsync(string instructorId)
+
+        public async Task<IEnumerable<Attendance>> BulkAddAttendanceRecordsAsync(List<Attendance> entries)
+        {
+            using var conn = _factory.CreateConnection();
+            conn.Open();
+
+            using var trans = conn.BeginTransaction();
+            try
+            {
+                // Oracle PL/SQL block to handle insert and return ID
+                string sql = @"
+            BEGIN
+                INSERT INTO ATTENDANCE (ENROLL_ID, ATTENDANCE_DATE, STATUS, MARKED_BY, DURATION)
+                VALUES (:EnrollId, :AttendanceDate, :Status, :MarkedBy, :Duration)
+                RETURNING ATTENDANCE_ID INTO :outId;
+            END;";
+
+                foreach (var item in entries)
                 {
-                    return MapCourseCards(await _courses.GetByTeacherWithDetailsAsync(instructorId));
+                    var p = new DynamicParameters();
+                    p.Add("EnrollId", item.EnrollId);
+                    p.Add("AttendanceDate", item.AttendanceDate);
+                    p.Add("Status", item.Status);
+                    p.Add("MarkedBy", item.MarkedBy);
+                    p.Add("Duration", item.Duration);
+
+                    // Output parameter to catch the IDENTITY/SEQUENCE value
+                    p.Add("outId", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+                    await conn.ExecuteAsync(sql, p, transaction: trans);
+
+                    // Update the model with the DB-generated ID
+                    item.AttendanceId = p.Get<int>("outId");
                 }
 
-                public async Task<InstructorWeeklyCalendarViewModel> GetWeeklyCalendarAsync(string instructorId)
+                trans.Commit();
+                return entries;
+            }
+            catch (Exception)
+            {
+                trans.Rollback();
+                throw;
+            }
+        }
+
+        public async Task<bool> UpdateAttendanceStatusAsync(int attendanceId, string status)
+        {
+            using var conn = _factory.CreateConnection();
+            conn.Open();
+
+            using var trans = conn.BeginTransaction();
+            try
+            {
+                string sql = @"
+                    UPDATE ATTENDANCE 
+                    SET STATUS = :Status 
+                    WHERE ATTENDANCE_ID = :AttendanceId";
+
+                // We pass the transaction object to ExecuteAsync
+                int rowsAffected = await conn.ExecuteAsync(sql, new
                 {
-                    var dashboard = await GetDashboardAsync(instructorId);
-                    return new InstructorWeeklyCalendarViewModel
-                    {
-                        GreetingMessage = dashboard.GreetingMessage,
-                        Profile = dashboard.Profile,
-                        Summary = dashboard.WeeklySummary,
-                        AssignedCourses = dashboard.Courses
-                    };
-                }
+                    Status = status,
+                    AttendanceId = attendanceId
+                }, transaction: trans);
 
-                public async Task<InstructorAttendanceViewModel> GetManageAttendanceModelAsync(string instructorId, string? selectedCourseId = null, string? selectedSectionId = null, string? selectedMonth = null)
+                // Commit the changes to the database
+                trans.Commit();
+
+                return rowsAffected > 0;
+            }
+            catch (Exception)
+            {
+                // Rollback ensures no partial or corrupt state if the DB connection hiccups
+                trans.Rollback();
+                throw;
+            }
+        }
+
+        public async Task<InstructorWeeklyCalendarViewModel> GetWeeklyCalendarAsync(string instructorId)
+        {
+            var dashboard = await GetDashboardAsync(instructorId);
+            return new InstructorWeeklyCalendarViewModel
+            {
+                GreetingMessage = dashboard.GreetingMessage,
+                Profile = dashboard.Profile,
+                Summary = dashboard.WeeklySummary,
+                AssignedCourses = dashboard.Courses
+            };
+        }
+
+        public async Task<InstructorAttendanceViewModel> GetManageAttendanceModelAsync(string instructorId, string? selectedCourseId = null, string? selectedSectionId = null, string? selectedMonth = null)
+        {
+            // 1. Basic Setup & Options
+            var profile = await BuildProfileAsync(instructorId);
+            var courseDtos = (await _courses.GetByTeacherWithDetailsAsync(instructorId))?.ToList() ?? new List<CourseDto>();
+            var sectionDtos = (await _sections.GetByTeacherAsync(instructorId))?.ToList() ?? new List<SectionsDto>();
+
+            var courseOptions = courseDtos.Select(c => new SelectOption { Value = c.CourseId, Label = $"{c.CourseId} - {c.CourseName}" }).ToList();
+            var sectionOptions = sectionDtos.Select(s => new SelectOption { Value = s.SectionId, Label = SectionHelper.GetFormattedSectionLabel(s.Degree, s.SectionLabel, s.Batch) }).ToList();
+
+            selectedCourseId ??= courseOptions.FirstOrDefault()?.Value ?? string.Empty;
+            selectedSectionId ??= sectionOptions.FirstOrDefault()?.Value ?? string.Empty;
+
+            if(selectedMonth == null)
+            {
+                // Default to current month name, e.g., "May"
+                selectedMonth = DateTime.Now.ToString("MMMM");
+            }
+
+            // 2. Fetch Data from DB
+            // You'll need a repo method that returns a flat list of students + their attendance for that month
+            var flatData = await GetAttendanceReportAsync(selectedCourseId, selectedSectionId, selectedMonth);
+            // 3. Pivot the Data
+            // Group by student so we have one row per student
+
+            var studentRows = flatData
+                .GroupBy(f => new { f.EnrollId, f.StudentId, f.FullName })
+                .Select((group, index) => new InstructorAttendanceStudentRow
                 {
-                    var profile = await BuildProfileAsync(instructorId);
-                    var courseDtos = (await _courses.GetByTeacherWithDetailsAsync(instructorId))?.ToList() ?? new List<CourseDto>();
-                    var sectionDtos = (await _sections.GetByTeacherAsync(instructorId))?.ToList() ?? new List<SectionsDto>();
-
-                    var courseOptions = courseDtos.Select(c => new SelectOption
-                    {
-                        Value = c.CourseId.ToString(),
-                        Label = $"{c.CourseName} ({c.CreditHours} cr)"
-                    }).ToList();
-
-                    var sectionOptions = sectionDtos.Select(s => new SelectOption
-                    {
-                        Value = s.SectionId,
-                        Label = SectionHelper.GetFormattedSectionLabel(s.Degree, s.SectionLabel, s.Batch)
-                    }).ToList();
-
-                    selectedCourseId ??= courseOptions.FirstOrDefault()?.Value ?? string.Empty;
-                    selectedSectionId ??= sectionOptions.FirstOrDefault()?.Value ?? string.Empty;
-                    selectedMonth ??= "May";
-
-                    var attendanceHeaders = new List<string>
-                    {
-                        "S.No.",
-                        "Roll No.",
-                        "Full Name",
-                        "Mon",
-                        "Tue",
-                        "Wed",
-                        "Thu",
-                        "Fri"
-                    };
-
-                    var students = new List<InstructorAttendanceStudentRow>
-                    {
-                        new InstructorAttendanceStudentRow { SNo = 1, RollNo = "STU-101", FullName = "Ayesha Khan", Statuses = new List<string>{ "Present", "Present", "Absent", "Present", "Present" } },
-                        new InstructorAttendanceStudentRow { SNo = 2, RollNo = "STU-107", FullName = "Bilal Ahmed", Statuses = new List<string>{ "Present", "Late", "Present", "Present", "Present" } },
-                        new InstructorAttendanceStudentRow { SNo = 3, RollNo = "STU-113", FullName = "Fatima Noor", Statuses = new List<string>{ "Absent", "Present", "Present", "Present", "Present" } },
-                        new InstructorAttendanceStudentRow { SNo = 4, RollNo = "STU-121", FullName = "Omar Saeed", Statuses = new List<string>{ "Present", "Present", "Present", "Present", "Late" } }
-                    };
-
-                    return new InstructorAttendanceViewModel
-                    {
-                        GreetingMessage = GetGreeting(),
-                        Profile = profile,
-                        SelectedSemester = selectedCourseId,
-                        SemesterOptions = new List<SelectOption>
+                    SNo = index + 1,
+                    EnrollId = group.Key.EnrollId,
+                    RollNo = group.Key.StudentId, // Using USER_ID as Roll No
+                    FullName = group.Key.FullName,
+                    Attendances = group
+                        .Where(x => x.AttendanceId > 0) // Only include actual records
+                        .Select(a => new AttendanceRecordViewModel
                         {
-                            new SelectOption { Value = "Spring 2026", Label = "Spring 2026" },
-                            new SelectOption { Value = "Fall 2025", Label = "Fall 2025" }
-                        },
-                        SelectedCourseId = selectedCourseId,
-                        CourseOptions = courseOptions,
-                        SelectedSectionId = selectedSectionId,
-                        SectionOptions = sectionOptions,
-                        SelectedMonth = selectedMonth,
-                        MonthOptions = new List<SelectOption>
-                        {
-                            new SelectOption { Value = "January", Label = "January" },
-                            new SelectOption { Value = "February", Label = "February" },
-                            new SelectOption { Value = "March", Label = "March" },
-                            new SelectOption { Value = "April", Label = "April" },
-                            new SelectOption { Value = "May", Label = "May" },
-                            new SelectOption { Value = "June", Label = "June" }
-                        },
-                        CurrentWeek = 5,
-                        SelectedDuration = "1",
-                        DurationOptions = new List<SelectOption>
-                        {
-                            new SelectOption { Value = "1", Label = "1 hour" },
-                            new SelectOption { Value = "1.5", Label = "1.5 hours" },
-                            new SelectOption { Value = "2", Label = "2 hours" },
-                            new SelectOption { Value = "2.5", Label = "2.5 hours" },
-                            new SelectOption { Value = "3", Label = "3 hours" }
-                        },
-                        AttendanceHeaders = attendanceHeaders,
-                        Students = students
-                    };
+                            AttendanceId = a.AttendanceId,
+                            Date = a.AttendanceDate,
+                            Status = a.Status
+                        })
+                        .OrderBy(a => a.Date)
+                        .ToList()
+                }).ToList();
+
+            // 4. Construct Final ViewModel
+            return new InstructorAttendanceViewModel
+            {
+                InstructorName = profile.FullName,
+                CourseOptions = courseOptions,
+                SectionOptions = sectionOptions,
+                SelectedCourseId = selectedCourseId,
+                SelectedSectionId = selectedSectionId,
+                SelectedMonth = selectedMonth ?? DateTime.Now.ToString("MMMM"),
+                Students = studentRows,
+                // Optional: Helpers for the Duration dropdown
+                DurationOptions = new List<SelectOption> {
+                    new() { Value = "1", Label = "1 Hour" },
+                    new() { Value = "1.5", Label = "1.5 Hours" },
+                    new() { Value = "2", Label = "2 Hours" },
+                    new() { Value = "2.5", Label = "2.5 Hours" },
+                    new() { Value = "3", Label = "3 Hours" }
                 }
-        */
+            };
+        }
+
         private static string GetGreeting()
         {
             var hour = DateTime.Now.Hour;
@@ -743,6 +845,57 @@ namespace OmniFlex.Models.Repositories.Instructor
             conn.Open();
             var enrollId = await conn.QueryFirstOrDefaultAsync<int?>(sql, new { StudentId = studentId, OfferingId = offeringId });
             return enrollId ?? 0;
+        }
+        public async Task<List<int>> GetEnrollmentIDsForAttendace(string courseId, string sectionId)
+        {
+            string sql = @"
+                            SELECT e.ENROLL_ID 
+                            FROM COURSE_ENROLLMENTS e
+                            INNER JOIN SECTION_OFFERINGS o ON e.OFFERING_ID = o.OFFERING_ID
+                            WHERE o.COURSE_ID = :CourseId AND o.SECTION_ID = :SectionId";
+
+            using var conn = _factory.CreateConnection();
+            conn.Open();
+            var enrollIds = await conn.QueryFirstOrDefaultAsync<List<int>>(sql, new { CourseId = courseId, SectionId = sectionId });
+
+            return enrollIds ?? new List<int>();
+
+        }
+
+        public async Task<IEnumerable<AttendanceFlatDto>> GetAttendanceReportAsync(string courseId, string sectionId, string month)
+        {
+            using var conn = _factory.CreateConnection();
+            conn.Open();
+
+            // Convert month name to number if necessary, e.g., "May" -> "05"
+            string monthNum = DateTime.ParseExact(month, "MMMM", CultureInfo.InvariantCulture).ToString("mm");
+            string currentYear = DateTime.Now.Year.ToString();
+
+            string sql = @"SELECT 
+                    e.ENROLL_ID,
+                    u.USER_ID AS StudentId,
+                    u.FIRST_NAME || ' ' || u.LAST_NAME AS FullName,
+                    NVL(a.ATTENDANCE_ID, 0) AS AttendanceId,
+                    a.ATTENDANCE_DATE AS AttendanceDate,
+                    a.DURATION AS Duration,
+                    a.STATUS
+                FROM ENROLLMENTS e
+                JOIN USERS u ON e.STUDENT_ID = u.USER_ID
+                JOIN SECTION_OFFERINGS so ON e.OFFERING_ID = so.OFFERING_ID
+                LEFT JOIN ATTENDANCE a ON e.ENROLL_ID = a.ENROLL_ID 
+                    AND TO_CHAR(a.ATTENDANCE_DATE, 'MM') = :MonthNumber -- Pass '05' for May
+                    AND TO_CHAR(a.ATTENDANCE_DATE, 'YYYY') = :Year     -- Always filter by year
+                WHERE so.COURSE_ID = :CourseId 
+                    AND so.SECTION_ID = :SectionId
+                ORDER BY u.USER_ID, a.ATTENDANCE_DATE ASC";
+
+            return await conn.QueryAsync<AttendanceFlatDto>(sql, new
+            {
+                CourseId = courseId,
+                SectionId = sectionId,
+                MonthNumber = monthNum,
+                Year = currentYear
+            });
         }
         public async Task<OnsiteExamViewModel> GetOnsiteAssignmentDetailsAsync(string offeringId, int assignmentId)
         {
