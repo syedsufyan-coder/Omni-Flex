@@ -1,4 +1,4 @@
-namespace OmniFlex.Models.Domain.Admin
+    namespace OmniFlex.Models.Domain.Admin
 {
     public class SectionTa
     {

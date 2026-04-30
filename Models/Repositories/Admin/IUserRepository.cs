@@ -1,4 +1,5 @@
-using OmniFlex.Models.Domain.Admin;
+using OmniFlex.Models.Domain.Admin;  
+using OmniFlex.Models.DTOs;        
 
 namespace OmniFlex.Models.Repositories.Admin
 {
@@ -13,5 +14,8 @@ namespace OmniFlex.Models.Repositories.Admin
         Task<int> DeleteAsync(string userId);
         Task<bool> ExistsAsync(string userId);
         Task<int> GetCountByRoleAsync(string role);
+        Task<int> AddTaToSectionAsync(TAAssignmentDto assignment);
+        Task<IEnumerable<User>> GetTasBySectionAsync(string sectionId);
     }
+
 }

@@ -5,67 +5,421 @@
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-  <h4>Sections</h4>
-  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSectionModal">
-    <i class="bi bi-plus-circle me-2"></i>Add New Section
-  </button>
+    <h4>Sections <span class="text-muted fs-6">(@Model.Count() total)</span></h4>
+    <button class="btn btn-primary" onclick="openAddSectionModal()">
+        <i class="bi bi-plus-circle me-2"></i>Add New Section
+    </button>
 </div>
 
 <div class="card">
-  <div class="card-body">
-    <div class="input-group mb-3" style="width: 300px;">
-      <span class="input-group-text"><i class="bi bi-search"></i></span>
-      <input id="sectionSearch" class="form-control" placeholder="Search sections..." />
+    <div class="card-body">
+        <div class="input-group mb-3" style="width:300px;">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input id="sectionSearch" class="form-control" placeholder="Search sections..." />
+        </div>
+
+        <div class="table-responsive">
+            <table id="sectionsTable" class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>#</th>
+                        <th class="sortable">Section ID <i class="bi bi-sort sort-icon ms-1"></i></th>
+                        <th class="sortable">Label <i class="bi bi-sort sort-icon ms-1"></i></th>
+                        <th class="sortable">Department <i class="bi bi-sort sort-icon ms-1"></i></th>
+                        <th>Degree</th>
+                        <th>Batch</th>
+                        <th>Class Rep</th>
+                        <th>Enrolled / Seats</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        var idx = 0;
+                        foreach (var s in Model)
+                        {
+                            idx++;
+                            <tr data-section-id="@s.SectionId">
+                                <td>@idx</td>
+                                <td><code>@s.SectionId</code></td>
+                                <td>@s.SectionLabel</td>
+                                <td>@s.Department</td>
+                                <td>@s.Degree</td>
+                                <td>@s.BatchYear</td>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(s.CrName) && s.CrName.Trim() != " ")
+                                    {
+                                        <span class="badge bg-success">@s.CrName</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">Not assigned</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="@(s.EnrolledStudents >= s.Seats ? "text-danger fw-bold" : "")">
+                                        @s.EnrolledStudents / @s.Seats
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-info"
+                                            onclick="openViewSectionModal('@s.SectionId')"
+                                            title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-warning"
+                                            onclick="openEditSectionModal('@s.SectionId')"
+                                            title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary"
+                                            onclick="openAssignCRModal('@s.SectionId')"
+                                            title="Assign CR">
+                                        <i class="bi bi-person-plus"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger"
+                                            onclick="openDeleteSectionModal('@s.SectionId', '@s.SectionId')"
+                                            title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox fs-4 d-block mb-2"></i>No sections found
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
-    <div class="table-responsive">
-      <table id="sectionsTable" class="table table-hover">
-        <thead class="table-dark">
-          <tr>
-            <th>#</th>
-            <th class="sortable">Section Name <i class="bi bi-sort sort-icon ms-1"></i></th>
-            <th class="sortable">Department <i class="bi bi-sort sort-icon ms-1"></i></th>
-            <th>Class Representative</th>
-            <th>Enrolled / Max</th>
-            <th>Batch</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-        @if (Model != null)
-        {
-            var index = 0;
-            foreach (var sectionItem in Model)
-            {
-                index++;
-                var pct = sectionItem.Seats > 0 ? (sectionItem.EnrolledStudents * 100 / sectionItem.Seats) : 0;
-                <tr>
-                    <td>@index</td>
-                    <td>@sectionItem.SectionName</td>
-                    <td>@sectionItem.Department</td>
-                    <td>@sectionItem.CrName</td>
-                    <td>@sectionItem.EnrolledStudents / @sectionItem.Seats</td>
-                    <td>@sectionItem.BatchYear</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip" title="View"><i class="bi bi-eye"></i></button>
-                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" title="Edit"><i class="bi bi-pencil"></i></button>
-                        <button class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip" title="Transfer Students"><i class="bi bi-arrow-left-right"></i></button>
-                        <button class="btn btn-sm btn-outline-danger btn-delete" data-course-name="@sectionItem.SectionId" data-bs-toggle="tooltip" title="Delete"><i class="bi bi-trash"></i></button>
-                    </td>
-                </tr>
-            }
-        }
-        </tbody>
-      </table>
+</div>
+
+<!--  ADD SECTION MODAL -->
+<div class="modal fade" id="addSectionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#1a3a6b;">
+                <h5 class="modal-title text-white">
+                    <i class="bi bi-plus-circle me-2"></i>Add New Section
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="createSectionError" class="alert alert-danger  d-none"></div>
+                <div id="createSectionSuccess" class="alert alert-success d-none"></div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Section ID <span class="text-danger">*</span></label>
+                        <input type="text" id="create_sectionId" class="form-control"
+                               placeholder="e.g. BCS-4G" maxlength="10" />
+                        <div class="form-text">Unique ID — e.g. BCS-4G, BAI-2A</div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Section Label <span class="text-danger">*</span></label>
+                        <input type="text" id="create_sectionLabel" class="form-control"
+                               placeholder="e.g. 4G" maxlength="5" />
+                        <div class="form-text">Short label — e.g. 4G, 2A, 3B</div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Department <span class="text-danger">*</span></label>
+                        <select id="create_department" class="form-select">
+                            <option value="">-- Select Department --</option>
+                            <option value="CS">CS — Computer Science</option>
+                            <option value="AI">AI — Artificial Intelligence</option>
+                            <option value="SE">SE — Software Engineering</option>
+                            <option value="CY">CY — Cyber Security</option>
+                            <option value="DS">DS — Data Science</option>
+                            <option value="EE">EE — Electrical Engineering</option>
+                            <option value="MG">MG — Management</option>
+                            <option value="SH">SH — Sciences & Humanities</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Degree Program <span class="text-danger">*</span></label>
+                        <select id="create_degree" class="form-select">
+                            <option value="">-- Select Degree --</option>
+                            <option value="BSCS">BS Computer Science</option>
+                            <option value="BSAI">BS Artificial Intelligence</option>
+                            <option value="BSSE">BS Software Engineering</option>
+                            <option value="BSCY">BS Cyber Security</option>
+                            <option value="BSDS">BS Data Science</option>
+                            <option value="BSEE">BS Electrical Engineering</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Batch Year <span class="text-danger">*</span></label>
+                    <input type="number" id="create_batch" class="form-control"
+                           placeholder="e.g. 2024" min="2020" max="2035" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitCreateSection()">
+                    <i class="bi bi-plus-circle me-1"></i>Add Section
+                </button>
+            </div>
+        </div>
     </div>
-    <nav aria-label="Sections pagination">
-      <ul class="pagination justify-content-center">
-        <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
-        <li class="page-item active"><a class="page-link" href="#">1</a></li>
-        <li class="page-item"><a class="page-link" href="#">2</a></li>
-        <li class="page-item"><a class="page-link" href="#">Next</a></li>
-      </ul>
-    </nav>
-  </div>
+</div>
+
+<!--  EDIT SECTION MODAL  -->
+<div class="modal fade" id="editSectionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#1a3a6b;">
+                <h5 class="modal-title text-white">
+                    <i class="bi bi-pencil-square me-2"></i>Edit Section
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="editSectionError" class="alert alert-danger  d-none"></div>
+                <div id="editSectionSuccess" class="alert alert-success d-none"></div>
+                <input type="hidden" id="edit_sectionId" />
+
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:28%">Field</th>
+                                <th style="width:36%">Current Value</th>
+                                <th style="width:36%">New Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Section ID</td>
+                                <td><input id="edit_cur_sectionId" class="form-control form-control-sm" disabled /></td>
+                                <td><span class="text-muted small">Cannot be changed</span></td>
+                            </tr>
+                            <tr>
+                                <td>Section Label <span class="text-danger">*</span></td>
+                                <td><input id="edit_cur_sectionLabel" class="form-control form-control-sm" disabled /></td>
+                                <td><input id="edit_new_sectionLabel" class="form-control form-control-sm" placeholder="New label" maxlength="5" /></td>
+                            </tr>
+                            <tr>
+                                <td>Department <span class="text-danger">*</span></td>
+                                <td><input id="edit_cur_department" class="form-control form-control-sm" disabled /></td>
+                                <td>
+                                    <select id="edit_new_department" class="form-select form-select-sm">
+                                        <option value="">-- Select --</option>
+                                        <option value="CS">CS</option>
+                                        <option value="AI">AI</option>
+                                        <option value="SE">SE</option>
+                                        <option value="CY">CY</option>
+                                        <option value="DS">DS</option>
+                                        <option value="EE">EE</option>
+                                        <option value="MG">MG</option>
+                                        <option value="SH">SH</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Degree <span class="text-danger">*</span></td>
+                                <td><input id="edit_cur_degree" class="form-control form-control-sm" disabled /></td>
+                                <td>
+                                    <select id="edit_new_degree" class="form-select form-select-sm">
+                                        <option value="">-- Select --</option>
+                                        <option value="BSCS">BSCS</option>
+                                        <option value="BSAI">BSAI</option>
+                                        <option value="BSSE">BSSE</option>
+                                        <option value="BSCY">BSCY</option>
+                                        <option value="BSDS">BSDS</option>
+                                        <option value="BSEE">BSEE</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Batch Year</td>
+                                <td><input id="edit_cur_batch" class="form-control form-control-sm" disabled /></td>
+                                <td><input id="edit_new_batch" type="number" class="form-control form-control-sm" placeholder="e.g. 2024" min="2020" max="2035" /></td>
+                            </tr>
+                            <tr>
+                                <td>Class Representative</td>
+                                <td><input id="edit_cur_cr" class="form-control form-control-sm" disabled /></td>
+                                <td><span class="text-muted small">Use "Assign CR" button</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-muted small mt-1">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Leave fields blank to keep current value.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" onclick="submitEditSection()">
+                    <i class="bi bi-pencil me-1"></i>Update Section
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--  VIEW SECTION MODAL -->
+<div class="modal fade" id="viewSectionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#1a3a6b;">
+                <h5 class="modal-title text-white">
+                    <i class="bi bi-building me-2"></i>Section Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="viewSectionBody">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 text-muted">Loading...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--  STUDENTS MODAL  -->
+<div class="modal fade" id="studentsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#1a3a6b;">
+                <h5 class="modal-title text-white" id="studentsModalLabel">
+                    <i class="bi bi-people me-2"></i>Enrolled Students
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="studentsLoading" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 text-muted">Loading students...</p>
+                </div>
+                <div id="studentsError" class="alert alert-danger  d-none"></div>
+                <div id="studentsContent" class="d-none">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Student ID</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Degree</th>
+                                    <th>Batch</th>
+                                    <th>Department</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentsTableBody"></tbody>
+                        </table>
+                    </div>
+                    <div id="noStudentsMessage" class="text-center py-4 d-none">
+                        <i class="bi bi-inbox display-4 text-muted"></i>
+                        <p class="mt-2 text-muted">No students enrolled in this section.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ASSIGN CR MODAL -->
+<div class="modal fade" id="assignCRModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#1a3a6b;">
+                <h5 class="modal-title text-white">
+                    <i class="bi bi-person-plus me-2"></i>Assign Class Representative
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="assignCRError" class="alert alert-danger  d-none"></div>
+                <div id="assignCRSuccess" class="alert alert-success d-none"></div>
+                <input type="hidden" id="assign_sectionId" />
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Section</label>
+                    <p class="text-muted" id="assign_sectionName">—</p>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Current CR</label>
+                    <div id="currentCR">
+                        <p class="text-muted small">Loading...</p>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">
+                        Select New CR <span class="text-danger">*</span>
+                    </label>
+                    <select id="assign_studentId" class="form-select">
+                        <option value="">-- Select a Student --</option>
+                    </select>
+                    <div class="form-text">Only enrolled students of this section are shown.</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitAssignCR()">
+                    <i class="bi bi-person-check me-1"></i>Assign CR
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- DELETE SECTION MODAL -->
+<div class="modal fade" id="deleteSectionModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title text-danger fw-bold">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Delete Section
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-0">
+                <p class="text-muted mb-1">Are you sure you want to delete:</p>
+                <p class="fw-bold fs-5" id="delete_sectionName"></p>
+
+                <input type="hidden" id="delete_sectionId" />
+
+                <div id="deleteSectionError" class="alert alert-danger d-none"></div>
+
+                <div class="alert alert-warning border-0 small d-flex align-items-center">
+                    <i class="bi bi-exclamation-triangle-fill fs-5 me-2"></i>
+                    <div>
+                        <strong>Permanent:</strong> This cannot be undone.
+                        <span class="d-block">Section must have no enrolled students.</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pb-4">
+                <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger px-4" onclick="submitDeleteSection()">
+                    <i class="bi bi-trash me-1"></i>Confirm Delete
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 @section Scripts {

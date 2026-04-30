@@ -7,14 +7,9 @@ using System.Data;
 
 namespace Omni_Flex.Controllers
 {
-    public class DbTestController : Controller
+    public class DbTestController(IDbConnection db) : Controller
     {
-        private readonly IDbConnection _db;
-
-        public DbTestController(IDbConnection db)
-        {
-            _db = db;
-        }
+        private readonly IDbConnection _db = db;
 
         public IActionResult Index()
         {

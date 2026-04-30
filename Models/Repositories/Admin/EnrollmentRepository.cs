@@ -35,6 +35,24 @@ namespace OmniFlex.Models.Repositories.Admin
                 $"SELECT {SELECT_COLUMNS} FROM ENROLLMENTS WHERE STUDENT_ID = :StudentId",
                 new { StudentId = studentId });
         }
+        public async Task<Enrollment?> GetRecordAsync(string studentId, string courseId)
+        {
+            using var conn = _factory.CreateConnection();
+
+            // Student that's being appointed as TA must have completed the assigned course with requirements fulfilled
+            string query = @"
+                SELECT 
+                    STUDENT_ID AS StudentId,
+                    COURSE_ID  AS CourseId,
+                    GRADE      AS Grade,
+                    STATUS     AS Status
+                FROM ENROLLMENTS 
+                WHERE STUDENT_ID = :StudentId 
+                AND COURSE_ID = :CourseId";
+
+            return await conn.QueryFirstOrDefaultAsync<Enrollment>(query,
+                new { StudentId = studentId, CourseId = courseId });
+        }
 
         public async Task<IEnumerable<Enrollment>> GetBySectionAsync(string sectionId)
         {

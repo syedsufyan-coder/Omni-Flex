@@ -7,5 +7,6 @@ namespace OmniFlex.Models.Domain.Admin
         public string SectionId { get; set; } = string.Empty;
         public DateTime EnrollDate { get; set; }
         public string Status { get; set; } = "Registered";
+        public string Grade { get; set; } = string.Empty;
     }
 }

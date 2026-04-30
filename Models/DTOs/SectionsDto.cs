@@ -12,7 +12,6 @@ namespace OmniFlex.Models.DTOs
         public string Department { get; set; } = string.Empty;
         public int Batch { get; set; }
     }
-
     public class CourseFilterRequest
     {
         public string? DeptId { get; set; }
@@ -22,5 +21,25 @@ namespace OmniFlex.Models.DTOs
         public string? TeacherId { get; set; }
         public string? SectionId { get; set; }
         public string? PreReqId { get; set; }
+    }
+
+    public class UpdateSectionRequest
+    {
+        public string SectionId { get; set; } = string.Empty;
+        public string? SectionLabel { get; set; }
+        public string? Department { get; set; }
+        public string? Degree { get; set; }
+        public int? Batch { get; set; }
+    }
+
+    public class DeleteSectionRequest
+    {
+        public string SectionId { get; set; } = string.Empty;
+    }
+
+    public class AssignCRRequest
+    {
+        public string SectionId { get; set; } = string.Empty;
+        public string StudentId { get; set; } = string.Empty;
     }
 }

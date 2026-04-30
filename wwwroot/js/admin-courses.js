@@ -57,71 +57,9 @@ document.addEventListener('DOMContentLoaded', function () {
             rows.forEach(row => tbody.appendChild(row));
         });
     });
-
-    // Add Course Modal functionality
-    const addCourseModal = document.getElementById('addCourseModal');
-    const addCourseForm = addCourseModal.querySelector('form');
-
-    addCourseModal.addEventListener('shown.bs.modal', function () {
-        // Focus on first input
-        addCourseForm.querySelector('input').focus();
-    });
-
-    // Form validation and submission
-    addCourseForm.addEventListener('submit', function (e) {
-        e.preventDefault();
-
-        // Basic validation
-        const courseCode = this.querySelector('input[placeholder*="CS-101"]').value.trim();
-        const courseName = this.querySelector('input[placeholder*="Programming Fundamentals"]').value.trim();
-
-        if (!courseCode || !courseName) {
-            alert('Please fill in all required fields.');
-            return;
-        }
-
-        // Simulate adding course
-        alert('Course added successfully!');
-
-        // Reset form and close modal
-        this.reset();
-        bootstrap.Modal.getInstance(addCourseModal).hide();
-    });
-
-    // Action buttons (view, assign, edit, delete)
-    tbody.addEventListener('click', function (e) {
-        const button = e.target.closest('button');
-        if (!button) return;
-
-        const row = button.closest('tr');
-        const courseCode = row.children[1].textContent;
-        const courseName = row.children[2].textContent;
-
-        if (button.querySelector('.bi-eye')) {
-            // View course details
-            alert(`Viewing details for ${courseCode}: ${courseName}`);
-        } else if (button.querySelector('.bi-person-plus')) {
-            // Assign instructor
-            const instructor = prompt('Enter instructor name:');
-            if (instructor) {
-                row.children[6].textContent = instructor;
-                alert(`Instructor ${instructor} assigned to ${courseCode}`);
-            }
-        } else if (button.querySelector('.bi-pencil')) {
-            // Edit course
-            alert(`Editing ${courseCode}: ${courseName}`);
-        } else if (button.querySelector('.bi-trash')) {
-            // Delete course
-            if (confirm(`Are you sure you want to delete ${courseCode}: ${courseName}?`)) {
-                row.remove();
-                alert('Course deleted successfully!');
-            }
-        }
-    });
-})
+});
 
 // Called when user changes the filter type dropdown
-// Shows the value input and updates placeholder to guide the user
 function onFilterTypeChange() {
     var filterType = document.getElementById('filterType').value;
     var valueRow = document.getElementById('filterValueRow');
@@ -141,7 +79,6 @@ function onFilterTypeChange() {
     valueRow.style.display = 'flex';
 
     // Each filter type gets its own label and placeholder
-    // This tells the user exactly what to type
     var placeholders = {
         'TeacherId': { label: 'Teacher ID', placeholder: 'e.g. INS1' },
         'DeptId': { label: 'Department ID', placeholder: 'e.g. CS' },
@@ -164,19 +101,19 @@ function filterCourses() {
     var filterType = document.getElementById('filterType').value;
     var filterValue = document.getElementById('filterValue').value.trim();
 
-    // CLIENT SIDE VALIDATION 1 — No filter type selected
+    // CLIENT SIDE VALIDATION 1 â€” No filter type selected
     if (!filterType) {
         showFilterError('Please Select a Filter Type First');
         return;
     }
 
-    // CLIENT SIDE VALIDATION 2 — Value box is empty
+    // CLIENT SIDE VALIDATION 2 â€” Value box is empty
     if (!filterValue) {
         showFilterError('Please Enter a Search Value');
         return;
     }
 
-    // CLIENT SIDE VALIDATION 3 — CreditHrs must be a number between 1 and 4
+    // CLIENT SIDE VALIDATION 3 â€” CreditHrs must be a number between 1 and 4
     if (filterType === 'CreditHrs') {
         var num = parseInt(filterValue);
         if (isNaN(num)) {
@@ -189,7 +126,7 @@ function filterCourses() {
         }
     }
 
-    // Build the request object — only fill the ONE field that matches filterType
+    // Build the request object â€” only fill the ONE field that matches filterType
     var requestData = {};
 
     // CreditHrs must be sent as a number, all others as string
@@ -207,29 +144,24 @@ function filterCourses() {
     // Hide any previous error
     hideFilterError();
 
-    // AJAX call using jQuery — sends requestData as JSON to AdminController.FilterCourses()
+    // AJAX call using jQuery
     $.ajax({
-        url: '/Admin/FilterCourses', // URL of our controller action
-        type: 'POST',                 // HTTP POST because we are sending data
-        contentType: 'application/json',     // Tell server we are sending JSON
-        data: JSON.stringify(requestData), // Convert JS object to JSON string
+        url: '/Admin/FilterCourses',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(requestData),
 
-        // Called when server responds successfully
         success: function (response) {
-            // Restore button to normal
             btn.disabled = false;
             btn.innerHTML = '<i class="bi bi-search me-1"></i>Search';
 
             if (response.success) {
-                // Server returned filtered courses — update the table
                 renderFilteredCourses(response.data);
             } else {
-                // Server returned a validation error — show it
                 showFilterError(response.message);
             }
         },
 
-        // Called when network error or server crash happens
         error: function () {
             btn.disabled = false;
             btn.innerHTML = '<i class="bi bi-search me-1"></i>Search';
@@ -242,7 +174,7 @@ function filterCourses() {
 function renderFilteredCourses(courses) {
     var tbody = document.querySelector('#coursesTable tbody');
 
-    // No courses found — show friendly empty state
+    // No courses found â€” show friendly empty state
     if (!courses || courses.length === 0) {
         tbody.innerHTML =
             '<tr>' +
@@ -255,7 +187,6 @@ function renderFilteredCourses(courses) {
     }
 
     // Build HTML rows from the courses array
-    // CourseDto properties: courseId, courseName, creditHours, courseType, courseCat, preRequisite
     var html = '';
     $.each(courses, function (index, course) {
         html +=
@@ -268,9 +199,9 @@ function renderFilteredCourses(courses) {
             '<td>' + course.courseCat + '</td>' +
             '<td><span class="badge bg-success">Active</span></td>' +
             '<td>' +
-            '<button class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip" title="View"><i class="bi bi-eye"></i></button> ' +
-            '<button class="btn btn-sm btn-outline-warning"   data-bs-toggle="tooltip" title="Edit"><i class="bi bi-pencil"></i></button> ' +
-            '<button class="btn btn-sm btn-outline-danger"    data-bs-toggle="tooltip" title="Delete"><i class="bi bi-trash"></i></button>' +
+            '<button class="btn btn-sm btn-outline-info" onclick="viewCourse(\'' + course.courseId + '\')" title="View"><i class="bi bi-eye"></i></button> ' +
+            '<button class="btn btn-sm btn-outline-warning" onclick="openEditCourseModal(\'' + course.courseId + '\')" title="Edit"><i class="bi bi-pencil"></i></button> ' +
+            '<button class="btn btn-sm btn-outline-danger" onclick="openDeleteCourseModal(\'' + course.courseId + '\', \'' + course.courseName + '\')" title="Delete"><i class="bi bi-trash"></i></button>' +
             '</td>' +
             '</tr>';
     });
@@ -305,12 +236,229 @@ function hideFilterError() {
     errorDiv.style.display = 'none';
 }
 
-// COURSES CRUD
-var currentDeleteCourseId = null;
-// EDIT button click — load course data into edit modal
-document.addEventListener('DOMContentLoaded', function () {
+// ==================== VIEW COURSE FUNCTIONALITY ====================
 
-    // Edit button click
+// Store modal instances to properly dispose them
+var modalInstances = {};
+
+// Helper function to open a modal and store its instance
+function openModal(modalId) {
+    // Dispose existing instance if any
+    if (modalInstances[modalId]) {
+        modalInstances[modalId].dispose();
+    }
+    
+    var modalEl = document.getElementById(modalId);
+    var modal = new bootstrap.Modal(modalEl);
+    modalInstances[modalId] = modal;
+    
+    // Remove backdrop and modal when hidden
+    modalEl.addEventListener('hidden.bs.modal', function () {
+        var backdrop = document.querySelector('.modal-backdrop');
+        if (backdrop) {
+            backdrop.remove();
+        }
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('padding-right');
+        document.body.style.removeProperty('overflow');
+    }, { once: true });
+    
+    modal.show();
+    return modal;
+}
+
+// Helper function to close a modal properly
+function closeModal(modalId) {
+    if (modalInstances[modalId]) {
+        modalInstances[modalId].hide();
+        modalInstances[modalId].dispose();
+        delete modalInstances[modalId];
+    }
+}
+
+function viewCourse(courseId) {
+    document.getElementById('viewCourseBody').innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Loading course details...</p>
+        </div>`;
+
+    openModal('viewCourseModal');
+
+    $.ajax({
+        url: '/Admin/GetCourse',
+        type: 'GET',
+        data: { id: courseId },
+        success: function (res) {
+            if (!res.success) {
+                document.getElementById('viewCourseBody').innerHTML =
+                    `<div class="alert alert-danger">${res.message}</div>`;
+                return;
+            }
+
+            const c = res.data;
+            const deptNames = {
+                'CS': 'Computer Science',
+                'AI': 'Artificial Intelligence',
+                'SE': 'Software Engineering',
+                'CY': 'Cyber Security',
+                'DS': 'Data Science',
+                'EE': 'Electrical Engineering',
+                'SH': 'Sciences & Humanities',
+                'MG': 'Management'
+            };
+
+            document.getElementById('viewCourseBody').innerHTML = `
+                <div class="d-flex align-items-center gap-3 p-3 mb-4 rounded"
+                     style="background:#f0f4ff;">
+                    <div class="rounded-circle bg-primary text-white fw-bold
+                                d-flex align-items-center justify-content-center"
+                         style="width:70px;height:70px;font-size:22px;flex-shrink:0;">
+                        <i class="bi bi-book"></i>
+                    </div>
+                    <div>
+                        <h5 class="mb-1">${c.courseName}</h5>
+                        <span class="badge bg-primary me-1">${c.courseId}</span>
+                        <span class="badge ${c.isActive == 1 ? 'bg-success' : 'bg-secondary'}">
+                            ${c.isActive == 1 ? 'Active' : 'Inactive'}
+                        </span>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <span class="text-muted small d-block">Department</span>
+                        <p class="fw-semibold">${c.deptId} - ${deptNames[c.deptId] || c.deptId}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <span class="text-muted small d-block">Credit Hours</span>
+                        <p class="fw-semibold">${c.creditHrs} Credit(s)</p>
+                    </div>
+                    <div class="col-md-6">
+                        <span class="text-muted small d-block">Course Type</span>
+                        <p class="fw-semibold">${c.courseType}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <span class="text-muted small d-block">Course Category</span>
+                        <p class="fw-semibold">${c.courseCat}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <span class="text-muted small d-block">Prerequisite</span>
+                        <p class="fw-semibold">${c.preReqId ? c.preReqId : 'None'}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <span class="text-muted small d-block">Assigned Instructors</span>
+                        <p class="fw-semibold" id="viewCourseInstructors">Loading...</p>
+                    </div>
+                </div>`;
+        },
+        error: function () {
+            document.getElementById('viewCourseBody').innerHTML =
+                `<div class="alert alert-danger">Failed to load course details.</div>`;
+        }
+    });
+}
+
+// assign Instructor Functionality - to be continued after main merge
+
+function openAssignInstructorModal(courseId) {
+    document.getElementById('assign_courseId').value = courseId;
+    document.getElementById('assign_courseName').textContent = 'Loading...';
+    document.getElementById('assign_instructorId').innerHTML = '<option value="">Loading instructors...</option>';
+    document.getElementById('currentInstructors').innerHTML = '<p class="text-muted small">Loading...</p>';
+    hideAlert('assignInstructorError');
+    hideAlert('assignInstructorSuccess');
+
+    // Get course details
+    $.ajax({
+        url: '/Admin/GetCourse',
+        type: 'GET',
+        data: { id: courseId },
+        success: function (res) {
+            if (res.success) {
+                document.getElementById('assign_courseName').textContent = 
+                    `${res.data.courseId} - ${res.data.courseName}`;
+            }
+        }
+    });
+
+    // Get all instructors
+    $.ajax({
+        url: '/Admin/GetInstructors',
+        type: 'GET',
+        success: function (res) {
+            if (res.success && res.data) {
+                let options = '<option value="">-- Select an Instructor --</option>';
+                res.data.forEach(function (instructor) {
+                    options += `<option value="${instructor.userId}">${instructor.fullName} (${instructor.userId})</option>`;
+                });
+                document.getElementById('assign_instructorId').innerHTML = options;
+            } else {
+                document.getElementById('assign_instructorId').innerHTML = 
+                    '<option value="">No instructors available</option>';
+            }
+        },
+        error: function () {
+            document.getElementById('assign_instructorId').innerHTML = 
+                '<option value="">Error loading instructors</option>';
+        }
+    });
+
+    // Get currently assigned instructors (placeholder - will be implemented with section data)
+    document.getElementById('currentInstructors').innerHTML = 
+        '<p class="text-muted small">No instructors assigned to this course yet.</p>';
+
+    openModal('assignInstructorModal');
+}
+
+function submitAssignInstructor() {
+    hideAlert('assignInstructorError');
+    hideAlert('assignInstructorSuccess');
+
+    const courseId = document.getElementById('assign_courseId').value;
+    const instructorId = document.getElementById('assign_instructorId').value;
+
+    if (!instructorId) {
+        return showAlert('assignInstructorError', 'Please select an instructor');
+    }
+
+    const btn = document.querySelector('#assignInstructorModal .btn-primary');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Assigning...';
+
+    // This will assign the instructor to sections of this course
+    // For now, we'll show a success message
+    $.ajax({
+        url: '/Admin/AssignInstructorToCourse',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ courseId: courseId, instructorId: instructorId }),
+        success: function (res) {
+            if (res.success) {
+                showAlert('assignInstructorSuccess', res.message);
+                setTimeout(() => {
+                    bootstrap.Modal.getInstance(document.getElementById('assignInstructorModal')).hide();
+                    location.reload();
+                }, 1000);
+            } else {
+                showAlert('assignInstructorError', res.message);
+            }
+        },
+        error: function () {
+            showAlert('assignInstructorError', 'Network error. Please try again.');
+        },
+        complete: function () {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-person-plus me-1"></i>Assign Instructor';
+        }
+    });
+}
+
+// COURSE CRUD OPERATIONS 
+
+var currentDeleteCourseId = null;
+
+// Edit button click
+document.addEventListener('DOMContentLoaded', function () {
     document.querySelector('#coursesTable tbody').addEventListener('click', function (e) {
         var btn = e.target.closest('button');
         if (!btn) return;
@@ -328,7 +476,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 
-// Open Edit Modal — fetch current data from server
+// Open Edit Modal â€” fetch current data from server
 function openEditCourseModal(courseId) {
     // Clear previous values
     document.getElementById('editCourseError').classList.add('d-none');
@@ -360,7 +508,7 @@ function openEditCourseModal(courseId) {
                 document.getElementById('edit_new_preReqId').value = '';
 
                 // Open modal
-                new bootstrap.Modal(document.getElementById('editCourseModal')).show();
+                openModal('editCourseModal');
             } else {
                 alert('Error: ' + response.message);
             }
@@ -378,7 +526,6 @@ function submitCreateCourse() {
     errorDiv.classList.add('d-none');
     successDiv.classList.add('d-none');
 
-    // Read form values
     var courseId = document.getElementById('create_courseId').value.trim();
     var courseName = document.getElementById('create_courseName').value.trim();
     var deptId = document.getElementById('create_deptId').value;
@@ -415,7 +562,6 @@ function submitCreateCourse() {
             if (response.success) {
                 successDiv.textContent = response.message;
                 successDiv.classList.remove('d-none');
-                // Reload page after 1.5 seconds
                 setTimeout(function () { location.reload(); }, 1500);
             } else {
                 showModalError(errorDiv, response.message);
@@ -436,7 +582,7 @@ function submitEditCourse() {
 
     var courseId = document.getElementById('edit_courseId').value;
 
-    // New values — if empty use current values
+    // New values â€” if empty use current values
     var courseName = document.getElementById('edit_new_courseName').value.trim()
         || document.getElementById('edit_current_courseName').value.trim();
     var deptId = document.getElementById('edit_new_deptId').value
@@ -502,11 +648,10 @@ function openDeleteCourseModal(courseId, courseName) {
         errorDiv.classList.add('d-none');
     }
 
-    var deleteModal = new bootstrap.Modal(document.getElementById('deleteCourseModal'));
-    deleteModal.show();
+    openModal('deleteCourseModal');
 }
 
-// submit DELETION handling
+// Submit DELETION handling
 function submitDeleteCourse() {
     const errorDiv = document.getElementById('deleteCourseError');
     const btn = document.querySelector('#deleteCourseModal .btn-danger');
@@ -543,8 +688,32 @@ function submitDeleteCourse() {
     });
 }
 
-// Helper — show error in modal
+// Helper â€” show error in modal
 function showModalError(div, message) {
     div.textContent = message;
     div.classList.remove('d-none');
+}
+
+// Helper functions for alerts
+function showAlert(id, msg) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.remove('d-none');
+}
+
+function hideAlert(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('d-none');
+}
+
+// Toast notification (top-right, auto-dismiss)
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} alert-dismissible fade show position-fixed shadow`;
+    toast.style.cssText = 'top:20px;right:20px;z-index:9999;min-width:300px;';
+    toast.innerHTML = `${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
 }

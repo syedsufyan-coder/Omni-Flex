@@ -8,12 +8,13 @@ namespace OmniFlex.Models.Domain.Admin
         public string LastName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Gender { get; set; } = string.Empty;
-        public DateTime DOB { get; set; }
+        public DateTime? DOB { get; set; }          // nullable — optional field
         public string PhoneNumber { get; set; } = string.Empty;
         public string Address { get; set; } = string.Empty;
         public string City { get; set; } = string.Empty;
         public string Country { get; set; } = string.Empty;
         public string PasswordHash { get; set; } = string.Empty;
+        public string? TaPasswordHash { get; set; }
         public string Role { get; set; } = string.Empty;
         public string Status { get; set; } = "Active";
 
@@ -21,13 +22,9 @@ namespace OmniFlex.Models.Domain.Admin
         public int? Batch { get; set; }
         public string? Degree { get; set; }
 
-        // TA only
-        public string? TaPasswordHash {get; set;}
-
-        // Instructor only
+        // Instructor / Admin only
         public string? Designation { get; set; }
         public string? OfficeRoom { get; set; }
         public string? Specialization { get; set; }
-
     }
 }

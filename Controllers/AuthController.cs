@@ -5,12 +5,9 @@ using BCrypt.Net;
 
 namespace OmniFlex.Controllers
 {
-    public class AuthController : Controller
+    public class AuthController(IUserRepository users) : Controller
     {
-        private readonly IUserRepository _users;
-
-        public AuthController(IUserRepository users)
-            => _users = users;
+        private readonly IUserRepository _users = users;
 
         [HttpGet]
         public IActionResult Login(string role = "student")

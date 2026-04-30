@@ -4,6 +4,8 @@ namespace OmniFlex.Models.ViewModels.Admin
     {
         public string SectionId { get; set; } = string.Empty;
         public string SectionName { get; set; } = string.Empty;
+        public string SectionLabel { get; set; } = string.Empty;
+        public string Degree { get; set; } = string.Empty;
         // public string CourseName { get; set; } = string.Empty;
         //public string CourseId { get; set; } = string.Empty;
         // public string Instructor { get; set; } = string.Empty;

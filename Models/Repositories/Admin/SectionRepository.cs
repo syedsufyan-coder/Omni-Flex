@@ -251,6 +251,16 @@ namespace OmniFlex.Models.Repositories.Admin
                 "UPDATE SECTIONS SET TEACHER_ID = :TeacherId WHERE SECTION_ID = :SectionId",
                 new { SectionId = sectionId, TeacherId = teacherId });
         }
+        public async Task<bool> ExistsAsync(string sectionId)
+        {
+            using var conn = _factory.CreateConnection();
+
+            // Formal Title Case SQL Query
+            const string sql = "SELECT COUNT(1) FROM SECTIONS WHERE SECTION_ID = :SectionId";
+
+            var count = await conn.ExecuteScalarAsync<int>(sql, new { SectionId = sectionId });
+            return count > 0;
+        }
 
         public async Task<int> AddTaAsync(string sectionId, string taId)
         {
@@ -279,6 +289,62 @@ namespace OmniFlex.Models.Repositories.Admin
             return await conn.ExecuteScalarAsync<int>(
                 "SELECT COUNT(*) FROM ENROLLMENTS WHERE SECTION_ID = :SectionId AND STATUS = 'Registered'",
                 new { SectionId = sectionId });
+        }
+
+        public async Task<int> AssignInstructorToCourseSectionsAsync(string courseId, string instructorId)
+        {
+            using var conn = _factory.CreateConnection();
+            
+            // Update all section offerings for this course in the current semester
+            const string sql = @"
+                UPDATE SECTION_OFFERINGS 
+                SET TEACHER_ID = :InstructorId 
+                WHERE COURSE_ID = :CourseId 
+                AND SEMESTER_ID = (SELECT SEMESTER_ID FROM SEMESTERS WHERE IS_CURRENT = 1)";
+            
+            return await conn.ExecuteAsync(sql, new { CourseId = courseId, InstructorId = instructorId });
+        }
+
+        public async Task<IEnumerable<StudentEnrollmentDto>> GetEnrolledStudentsAsync(string sectionId)
+        {
+            const string sql = @"
+                SELECT DISTINCT
+                    U.USER_ID AS StudentId,
+                    U.FIRST_NAME AS FirstName,
+                    U.LAST_NAME AS LastName,
+                    U.EMAIL AS Email,
+                    U.DEGREE AS Degree,
+                    U.BATCH AS Batch,
+                    U.STATUS AS Status,
+                    D.DEPT_NAME AS Department
+                FROM ENROLLMENTS E
+                JOIN SECTION_OFFERINGS SO ON E.OFFERING_ID = SO.OFFERING_ID
+                JOIN USERS U ON E.STUDENT_ID = U.USER_ID
+                LEFT JOIN DEPARTMENTS D ON D.DEPT_ID = U.DEPT_ID
+                WHERE SO.SECTION_ID = :SectionId 
+                    AND E.STATUS = 'Registered'
+                ORDER BY U.USER_ID";
+            
+            using var conn = _factory.CreateConnection();
+            return await conn.QueryAsync<StudentEnrollmentDto>(sql, new { SectionId = sectionId });
+        }
+
+        // DELETE SECTION
+        public async Task<int> DeleteAsync(string sectionId)
+        {
+            using var conn = _factory.CreateConnection();
+            return await conn.ExecuteAsync(
+                "DELETE FROM SECTIONS WHERE SECTION_ID = :SectionId",
+                new { SectionId = sectionId });
+        }
+
+        // ASSIGN CR (Class Representative)
+        public async Task<int> AssignCRAsync(string sectionId, string studentId)
+        {
+            using var conn = _factory.CreateConnection();
+            return await conn.ExecuteAsync(
+                "UPDATE SECTIONS SET CR_ID = :CrId WHERE SECTION_ID = :SectionId",
+                new { CrId = studentId, SectionId = sectionId });
         }
     }
 }
