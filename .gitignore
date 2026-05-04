@@ -494,4 +494,5 @@ appsettings.Development.json
 appsettings.json
 
 # Some sensitive .md files
-*.md
+*copilot*.md
+*QUICK*.md
