@@ -44,6 +44,12 @@ namespace OmniFlex.Controllers
             return Request.Headers["X-Requested-With"] == "XMLHttpRequest";
         }
 
+        private string? GetCurrentUserId()
+            => HttpContext.Session.GetString("UserId");
+
+        private IActionResult RedirectToLogin()
+            => RedirectToAction("Login", "Auth", new { role = "student" });
+
         public class AddPostCommentRequest
         {
             public long PostId { get; set; }
@@ -58,7 +64,12 @@ namespace OmniFlex.Controllers
                 return BadRequest(new { success = false, message = "Comment content is required." });
             }
 
-            string userId = "U010"; // Hardcoded for now, or get from User.Identity
+            var userId = GetCurrentUserId();
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return Unauthorized();
+            }
+
             var rowsAffected = await _enrollments.AddPostCommentAsync(request.PostId, userId, request.Content.Trim());
             if (rowsAffected <= 0)
             {
@@ -78,13 +89,15 @@ namespace OmniFlex.Controllers
             });
         }
 
-        // TO-DO: Remove hardcoded UserId and get from User.Identity once authentication is implemented
-        // TO-DO: Handle case when user is not found (null) and show appropriate message or redirect
         // TO-DO: Remove -Theory concatenation from course names in and handle it in view instead based on credit hours or course type
         public async Task<IActionResult> Dashboard()
         {
-            // 1. Get the current User ID (Hardcoded for now, or get from User.Identity)
-            string userId = "U010";
+            // 1. Get the current User ID from session
+            var userId = GetCurrentUserId();
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return RedirectToLogin();
+            }
 
             // 2. Fetch data from your service/repository
             var studentDetails = await _users.GetDetailsByIdAsync(userId);
@@ -151,8 +164,11 @@ namespace OmniFlex.Controllers
 
         public async Task<IActionResult> Enrolled()
         {
-            // 1. Get the current User ID (Hardcoded for now, or get from User.Identity)
-            string userId = "U010";
+            var userId = GetCurrentUserId();
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return RedirectToLogin();
+            }
 
             var enrolledCourses = await _enrollments.GetEnrolledClassesAsync(userId);
 
@@ -175,7 +191,12 @@ namespace OmniFlex.Controllers
 
         public async Task<IActionResult> CourseDetails(string courseId, string tab = "stream")
         {
-            string userId = "U010"; // Hardcoded for now, or get from User.Identity
+            var userId = GetCurrentUserId();
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return RedirectToLogin();
+            }
+
             var enrolledCourses = await _enrollments.GetEnrolledClassesAsync(userId);
             var course = enrolledCourses.FirstOrDefault(c => string.Equals(c.CourseCode, courseId, StringComparison.OrdinalIgnoreCase));
             if (course == null)
@@ -189,6 +210,7 @@ namespace OmniFlex.Controllers
                 normalizedTab = "stream";
             }
 
+            // TODO: Fetch real data for Course Description, Upcoming Due Count, Classwork Items, and People from the database instead of using placeholders.
             var model = new CourseDetailsViewModel
             {
                 CourseId = course.CourseCode,
@@ -239,6 +261,7 @@ namespace OmniFlex.Controllers
             return View(model);
         }
 
+        // TO-DO: Implement the following action and related repository method for the TODO Page feature.
         public IActionResult ToDo()
         {
             ViewData["ActivePage"] = "ToDo";
@@ -291,7 +314,12 @@ namespace OmniFlex.Controllers
 
         public async Task<IActionResult> Attendance()
         {
-            string userId = "U010"; // Hardcoded for now, or get from User.Identity
+            var userId = GetCurrentUserId();
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return RedirectToLogin();
+            }
+
             ViewData["ActivePage"] = "Attendance";
             ViewData["PageTitle"] = "Attendance";
             var model = await _attendance.GetStudentAttendanceAsync(userId);
@@ -340,10 +368,15 @@ namespace OmniFlex.Controllers
 
         public async Task<IActionResult> Transcript()
         {
+            var userId = GetCurrentUserId();
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return RedirectToLogin();
+            }
+
             ViewData["ActivePage"] = "Transcript";
             ViewData["PageTitle"] = "Transcript";
-            string userId = "U010"; // Hardcoded for now, or get from User.Identity
-            var model = await _results.GetDetailedTranscriptAsync(userId); // Hardcoded for now, or get from User.Identity
+            var model = await _results.GetDetailedTranscriptAsync(userId);
             return View(model);
         }
 

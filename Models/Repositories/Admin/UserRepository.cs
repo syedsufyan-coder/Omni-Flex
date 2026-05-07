@@ -43,6 +43,23 @@ namespace OmniFlex.Models.Repositories.Admin
                 new { UserId = userId });
         }
 
+        public async Task<User?> GetActiveLoginUserAsync(string userId)
+        {
+            using var conn = _factory.CreateConnection();
+            conn.Open();
+            return await conn.QueryFirstOrDefaultAsync<User>(@"
+                SELECT
+                    USER_ID       AS UserId,
+                    FIRST_NAME    AS FirstName,
+                    LAST_NAME     AS LastName,
+                    PASSWORD_HASH AS PasswordHash,
+                    ROLE          AS Role
+                FROM USERS
+                WHERE USER_ID = :UserId
+                  AND STATUS = 'Active'",
+                new { UserId = userId });
+        }
+
         public async Task<StudentDto?> GetDetailsByIdAsync(string userId)
         {
             const string sql = @"SELECT

@@ -6,6 +6,7 @@ namespace OmniFlex.Models.Repositories.Admin
     public interface IUserRepository
     {
         Task<User?> GetByIdAsync(string userId);
+        Task<User?> GetActiveLoginUserAsync(string userId);
         Task<StudentDto?> GetDetailsByIdAsync(string userId);
         Task<List<EnrolledCourseRow>> GetEnrolledCoursesAsync(string userId);
         Task<User?> GetByEmailAsync(string email);
