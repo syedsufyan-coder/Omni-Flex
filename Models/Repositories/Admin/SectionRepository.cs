@@ -40,25 +40,25 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<IEnumerable<SectionsDto>> GetAllDetailedAsync()
         {
             const string sql = @"SELECT
-                        S.SECTION_ID AS SectionId,
-                        S.SECTION_LABEL AS SectionLabel,
-                        S.DEGREE AS Degree,
-                        COUNT(DISTINCT E.STUDENT_ID) AS EnrolledStudents,
-                        CR.FIRST_NAME AS CrFirstName,
-                        CR.LAST_NAME AS CrLastName,
-                        D.DEPT_NAME AS Department,
-                        S.BATCH AS Batch
-                        FROM SECTIONS S
-                        JOIN SECTION_OFFERINGS SO  ON SO.SECTION_ID  = S.SECTION_ID
-                        JOIN SEMESTERS SM          ON SM.SEMESTER_ID = SO.SEMESTER_ID
-                        JOIN DEPARTMENTS D         ON D.DEPT_ID      = S.DEPARTMENT_ID
-                        LEFT JOIN USERS CR         ON CR.USER_ID     = S.CR_ID
-                        LEFT JOIN ENROLLMENTS E    ON E.OFFERING_ID  = SO.OFFERING_ID
-                            AND E.STATUS      = 'Registered'
-                        WHERE SM.IS_CURRENT  = 1
-                        GROUP BY S.SECTION_ID, S.DEGREE, S.SECTION_LABEL,
-                        CR.FIRST_NAME, CR.LAST_NAME, D.DEPT_NAME, S.BATCH
-                        ORDER BY S.SECTION_ID";
+                S.SECTION_ID    AS SectionId,
+                S.SECTION_LABEL AS SectionLabel,
+                S.DEGREE        AS Degree,
+                COUNT(DISTINCT E.STUDENT_ID) AS EnrolledStudents,
+                CR.FIRST_NAME   AS CrFirstName,
+                CR.LAST_NAME    AS CrLastName,
+                D.DEPT_NAME     AS Department,
+                S.BATCH         AS Batch
+            FROM SECTIONS S
+            JOIN DEPARTMENTS D          ON D.DEPT_ID      = S.DEPARTMENT_ID
+            LEFT JOIN USERS CR          ON CR.USER_ID     = S.CR_ID
+            LEFT JOIN SECTION_OFFERINGS SO ON SO.SECTION_ID = S.SECTION_ID
+            LEFT JOIN SEMESTERS SM      ON SM.SEMESTER_ID = SO.SEMESTER_ID
+                AND SM.IS_CURRENT = 1
+            LEFT JOIN ENROLLMENTS E     ON E.OFFERING_ID  = SO.OFFERING_ID
+                AND E.STATUS = 'Registered'
+            GROUP BY S.SECTION_ID, S.DEGREE, S.SECTION_LABEL,
+                CR.FIRST_NAME, CR.LAST_NAME, D.DEPT_NAME, S.BATCH
+            ORDER BY S.SECTION_ID";
             using var conn = _factory.CreateConnection();
             
             return await conn.QueryAsync<SectionsDto>(sql);
@@ -222,25 +222,25 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<int> CreateAsync(Section section)
         {
             using var conn = _factory.CreateConnection();
-            
             return await conn.ExecuteAsync(@"
                 INSERT INTO SECTIONS 
-                (SECTION_ID, COURSE_ID, SEMESTER_ID, TEACHER_ID, SEATS, 
-                 SECTION_LABEL)
+                (SECTION_ID, SECTION_LABEL, DEPARTMENT_ID, DEGREE, BATCH)
                 VALUES 
-                (:SectionId, :CourseId, :SemesterId, :TeacherId, :Seats,
-                 :SectionLabel)", section);
+                (:SectionId, :SectionLabel, :DepartmentId, :DegreeProgram, :BatchYear)",
+                section);
         }
 
         public async Task<int> UpdateAsync(Section section)
         {
             using var conn = _factory.CreateConnection();
-            
             return await conn.ExecuteAsync(@"
-                UPDATE SECTIONS SET 
-                COURSE_ID = :CourseId, SEMESTER_ID = :SemesterId, TEACHER_ID = :TeacherId,
-                SEATS = :Seats, SECTION_LABEL = :SectionLabel
-                WHERE SECTION_ID = :SectionId", section);
+                UPDATE SECTIONS SET
+                SECTION_LABEL = :SectionLabel,
+                DEPARTMENT_ID = :DepartmentId,
+                DEGREE        = :DegreeProgram,
+                BATCH         = :BatchYear
+                WHERE SECTION_ID = :SectionId",
+                section);
         }
 
         public async Task<int> AssignTeacherAsync(string sectionId, string teacherId)
@@ -287,7 +287,10 @@ namespace OmniFlex.Models.Repositories.Admin
             using var conn = _factory.CreateConnection();
             
             return await conn.ExecuteScalarAsync<int>(
-                "SELECT COUNT(*) FROM ENROLLMENTS WHERE SECTION_ID = :SectionId AND STATUS = 'Registered'",
+                @"SELECT COUNT(*) FROM ENROLLMENTS 
+                  WHERE OFFERING_ID IN (
+                      SELECT OFFERING_ID FROM SECTION_OFFERINGS WHERE SECTION_ID = :SectionId
+                  ) AND STATUS = 'Registered'",
                 new { SectionId = sectionId });
         }
 

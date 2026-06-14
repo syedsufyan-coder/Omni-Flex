@@ -29,12 +29,11 @@ namespace OmniFlex.Models.Repositories.Admin
             STATUS           AS Status,
             BATCH            AS Batch,
             DEGREE           AS Degree,
-            TA_PASSWORD_HASH AS TaPasswordHash,
             DESIGNATION      AS Designation,
             OFFICE_ROOM      AS OfficeRoom,
             SPECIALIZATION   AS Specialization";
 
-        // ─── READ ────────────────────────────────────────────────────
+        // READ 
         public async Task<User?> GetByIdAsync(string userId)
         {
             using var conn = _factory.CreateConnection();
@@ -83,7 +82,7 @@ namespace OmniFlex.Models.Repositories.Admin
                 new { Role = role });
         }
 
-        // ─── CREATE ──────────────────────────────────────────────────
+        // CREATE 
         public async Task<int> CreateAsync(User user)
         {
             using var conn = _factory.CreateConnection();
@@ -103,34 +102,35 @@ namespace OmniFlex.Models.Repositories.Admin
                 user);
         }
 
-        // ─── UPDATE ──────────────────────────────────────────────────
+        // UPDATE
         public async Task<int> UpdateAsync(User user)
         {
             using var conn = _factory.CreateConnection();
             return await conn.ExecuteAsync(@"
                 UPDATE USERS SET
-                    DEPT_ID        = :DeptId,
-                    FIRST_NAME     = :FirstName,
-                    LAST_NAME      = :LastName,
-                    EMAIL          = :Email,
-                    GENDER         = :Gender,
-                    DOB            = :DOB,
-                    PHONE_NUMBER   = :PhoneNumber,
-                    ADDRESS        = :Address,
-                    CITY           = :City,
-                    COUNTRY        = :Country,
-                    ROLE           = :Role,
-                    STATUS         = :Status,
-                    BATCH          = :Batch,
-                    DEGREE         = :Degree,
-                    DESIGNATION    = :Designation,
-                    OFFICE_ROOM    = :OfficeRoom,
-                    SPECIALIZATION = :Specialization
+                    DEPT_ID          = :DeptId,
+                    FIRST_NAME       = :FirstName,
+                    LAST_NAME        = :LastName,
+                    EMAIL            = :Email,
+                    GENDER           = :Gender,
+                    DOB              = :DOB,
+                    PHONE_NUMBER     = :PhoneNumber,
+                    ADDRESS          = :Address,
+                    CITY             = :City,
+                    COUNTRY          = :Country,
+                    PASSWORD_HASH    = :PasswordHash,
+                    ROLE             = :Role,
+                    STATUS           = :Status,
+                    BATCH            = :Batch,
+                    DEGREE           = :Degree,
+                    DESIGNATION      = :Designation,
+                    OFFICE_ROOM      = :OfficeRoom,
+                    SPECIALIZATION   = :Specialization
                 WHERE USER_ID = :UserId",
                 user);
         }
 
-        // ─── DELETE ──────────────────────────────────────────────────
+        // DELETE 
         public async Task<int> DeleteAsync(string userId)
         {
             using var conn = _factory.CreateConnection();

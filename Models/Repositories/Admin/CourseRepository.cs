@@ -27,8 +27,20 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<Course?> GetByIdAsync(string courseId)
         {
             using var conn = _factory.CreateConnection();
-            return await conn.QueryFirstOrDefaultAsync<Course>(
-                $"SELECT {SELECT_COLUMNS} FROM COURSES WHERE COURSE_ID = :CourseId",
+            return await conn.QueryFirstOrDefaultAsync<Course>(@"
+                SELECT 
+                    C.COURSE_ID   AS CourseId,
+                    C.DEPT_ID     AS DeptId,
+                    D.DEPT_NAME   AS DeptName,
+                    C.COURSE_NAME AS CourseName,
+                    C.CREDIT_HRS  AS CreditHrs,
+                    C.COURSE_TYPE AS CourseType,
+                    C.COURSE_CAT  AS CourseCat,
+                    C.PRE_REQ_ID  AS PreReqId,
+                    C.IS_ACTIVE   AS IsActive
+                FROM COURSES C
+                JOIN DEPARTMENTS D ON C.DEPT_ID = D.DEPT_ID
+                WHERE C.COURSE_ID = :CourseId",
                 new { CourseId = courseId });
         }
 
@@ -36,8 +48,19 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<IEnumerable<Course>> GetAllAsync()
         {
             using var conn = _factory.CreateConnection();
-            return await conn.QueryAsync<Course>(
-                $"SELECT {SELECT_COLUMNS} FROM COURSES");
+            return await conn.QueryAsync<Course>(@"
+                SELECT 
+                    C.COURSE_ID   AS CourseId,
+                    C.DEPT_ID     AS DeptId,
+                    D.DEPT_NAME   AS DeptName,
+                    C.COURSE_NAME AS CourseName,
+                    C.CREDIT_HRS  AS CreditHrs,
+                    C.COURSE_TYPE AS CourseType,
+                    C.COURSE_CAT  AS CourseCat,
+                    C.PRE_REQ_ID  AS PreReqId,
+                    C.IS_ACTIVE   AS IsActive
+                FROM COURSES C
+                JOIN DEPARTMENTS D ON C.DEPT_ID = D.DEPT_ID");
         }
 
         // Returns only active courses
@@ -48,7 +71,7 @@ namespace OmniFlex.Models.Repositories.Admin
                 $"SELECT {SELECT_COLUMNS} FROM COURSES WHERE IS_ACTIVE = 1");
         }
 
-        // Returns courses by department (basic — no JOIN)
+        // Returns courses by department (basic ï¿½ no JOIN)
         public async Task<IEnumerable<Course>> GetByDeptAsync(string deptId)
         {
             using var conn = _factory.CreateConnection();
@@ -122,7 +145,7 @@ namespace OmniFlex.Models.Repositories.Admin
         }
 
         // Returns active courses filtered by credit hours
-        // No DISTINCT needed — no SECTION_OFFERINGS JOIN, filters directly from COURSES table
+        // No DISTINCT needed ï¿½ no SECTION_OFFERINGS JOIN, filters directly from COURSES table
         public async Task<IEnumerable<CourseDto>> GetByCreditsWithDetailsAsync(int creditHrs)
         {
             const string sql = @"SELECT
@@ -141,8 +164,8 @@ namespace OmniFlex.Models.Repositories.Admin
             return await conn.QueryAsync<CourseDto>(sql, new { Credit_Hours = creditHrs });
         }
 
-        // Returns active courses filtered by course type — Theory or Lab
-        // No DISTINCT needed — filters directly from COURSES table
+        // Returns active courses filtered by course type ï¿½ Theory or Lab
+        // No DISTINCT needed ï¿½ filters directly from COURSES table
         public async Task<IEnumerable<CourseDto>> GetByCourseTypeWithDetailsAsync(string courseType)
         {
             const string sql = @"SELECT
@@ -161,8 +184,8 @@ namespace OmniFlex.Models.Repositories.Admin
             return await conn.QueryAsync<CourseDto>(sql, new { Coursetype = courseType });
         }
 
-        // Returns active courses filtered by course category — Core or Elective
-        // No DISTINCT needed — filters directly from COURSES table
+        // Returns active courses filtered by course category ï¿½ Core or Elective
+        // No DISTINCT needed ï¿½ filters directly from COURSES table
         public async Task<IEnumerable<CourseDto>> GetByCourseCatWithDetailsAsync(string courseCat)
         {
             const string sql = @"SELECT
@@ -182,7 +205,7 @@ namespace OmniFlex.Models.Repositories.Admin
         }
 
         // Returns active courses that have a specific course as prerequisite
-        // No DISTINCT needed — filters directly from COURSES table
+        // No DISTINCT needed ï¿½ filters directly from COURSES table
         public async Task<IEnumerable<CourseDto>> GetByPreRequisiteWithDetailsAsync(string preRequisiteId)
         {
             const string sql = @"SELECT

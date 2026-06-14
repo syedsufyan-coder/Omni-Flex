@@ -37,21 +37,6 @@
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link @(ViewData["PageTitle"]?.ToString() == "Instructors" ? "active" : "")" href="/admin/users?filter=instructor">
-                <i class="bi bi-person-badge me-2"></i> Instructors
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link @(ViewData["PageTitle"]?.ToString() == "TAs" ? "active" : "")" href="/admin/users?filter=ta">
-                <i class="bi bi-clipboard2-check me-2"></i> TAs
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link @(ViewData["PageTitle"]?.ToString() == "Students" ? "active" : "")" href="/admin/users?filter=student">
-                <i class="bi bi-mortarboard me-2"></i> Students
-            </a>
-        </li>
-        <li class="nav-item">
             <a class="nav-link @(ViewData["PageTitle"]?.ToString() == "Announcements" ? "active" : "")" href="/admin/announcements">
                 <i class="bi bi-megaphone me-2"></i> Announcements
             </a>

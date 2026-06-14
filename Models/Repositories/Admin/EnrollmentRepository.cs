@@ -14,7 +14,8 @@ namespace OmniFlex.Models.Repositories.Admin
         private const string SELECT_COLUMNS = @"
             ENROLL_ID   AS EnrollId,
             STUDENT_ID  AS StudentId,
-            SECTION_ID  AS SectionId,
+            ''          AS SectionId,
+            OFFERING_ID AS OfferingId,
             ENROLL_DATE AS EnrollDate,
             STATUS      AS Status";
 
@@ -59,7 +60,10 @@ namespace OmniFlex.Models.Repositories.Admin
             using var conn = _factory.CreateConnection();
             
             return await conn.QueryAsync<Enrollment>(
-                $"SELECT {SELECT_COLUMNS} FROM ENROLLMENTS WHERE SECTION_ID = :SectionId",
+                $@"SELECT {SELECT_COLUMNS} FROM ENROLLMENTS 
+                   WHERE OFFERING_ID IN (
+                       SELECT OFFERING_ID FROM SECTION_OFFERINGS WHERE SECTION_ID = :SectionId
+                   )",
                 new { SectionId = sectionId });
         }
 
@@ -68,17 +72,22 @@ namespace OmniFlex.Models.Repositories.Admin
             using var conn = _factory.CreateConnection();
             
             return await conn.ExecuteAsync(@"
-                INSERT INTO ENROLLMENTS (STUDENT_ID, SECTION_ID, ENROLL_DATE, STATUS)
-                VALUES (:StudentId, :SectionId, :EnrollDate, :Status)", enrollment);
+                INSERT INTO ENROLLMENTS (STUDENT_ID, OFFERING_ID, ENROLL_DATE, STATUS)
+                VALUES (:StudentId, :OfferingId, :EnrollDate, :Status)", enrollment);
         }
 
         public async Task<int> TransferAsync(int enrollId, string newSectionId)
         {
             using var conn = _factory.CreateConnection();
             
+            // Get the OFFERING_ID for the new section
+            var newOfferingId = await conn.ExecuteScalarAsync<string>(
+                "SELECT OFFERING_ID FROM SECTION_OFFERINGS WHERE SECTION_ID = :SectionId",
+                new { SectionId = newSectionId });
+            
             return await conn.ExecuteAsync(
-                "UPDATE ENROLLMENTS SET SECTION_ID = :NewSectionId WHERE ENROLL_ID = :EnrollId",
-                new { EnrollId = enrollId, NewSectionId = newSectionId });
+                "UPDATE ENROLLMENTS SET OFFERING_ID = :NewOfferingId WHERE ENROLL_ID = :EnrollId",
+                new { EnrollId = enrollId, NewOfferingId = newOfferingId });
         }
 
         public async Task<int> UpdateStatusAsync(int enrollId, string status)
@@ -95,7 +104,10 @@ namespace OmniFlex.Models.Repositories.Admin
             using var conn = _factory.CreateConnection();
             
             var count = await conn.ExecuteScalarAsync<int>(
-                "SELECT COUNT(*) FROM ENROLLMENTS WHERE STUDENT_ID = :StudentId AND SECTION_ID = :SectionId",
+                @"SELECT COUNT(*) FROM ENROLLMENTS 
+                  WHERE STUDENT_ID = :StudentId AND OFFERING_ID IN (
+                      SELECT OFFERING_ID FROM SECTION_OFFERINGS WHERE SECTION_ID = :SectionId
+                  )",
                 new { StudentId = studentId, SectionId = sectionId });
             return count > 0;
         }

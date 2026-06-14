@@ -91,6 +91,8 @@ namespace OmniFlex.Controllers
                         {
                             CourseId   = c.CourseId,
                             CourseName = c.CourseName,
+                            DeptId     = c.DeptId,       
+                            DeptName   = c.DeptName,    
                             CreditHrs  = c.CreditHrs,
                             CourseType = c.CourseType,
                             CourseCat  = c.CourseCat,
@@ -711,7 +713,7 @@ namespace OmniFlex.Controllers
                 user.FirstName = user.FirstName.Trim();
                 user.LastName = user.LastName.Trim();
                 user.Email = user.Email.Trim().ToLower();
-                user.PasswordHash = "ateebchandio"; // Default password (change in production)
+                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword("ateebchandio"); // Default password (change in production)
                 user.Status = "Active";
 
                 var result = await _users.CreateAsync(user);
@@ -755,6 +757,14 @@ namespace OmniFlex.Controllers
 
                 if (string.IsNullOrWhiteSpace(user.Email) || !user.Email.Contains('@'))
                     return Json(new { success = false, message = "A Valid Email Is Required" });
+
+                // Fetch existing user to preserve password hashes (not updated here, use ChangePassword endpoint)
+                var existingUser = await _users.GetByIdAsync(user.UserId);
+                if (existingUser == null)
+                    return Json(new { success = false, message = "User Not Found" });
+
+                // Preserve existing password hashes - passwords are changed via ChangePassword endpoint
+                user.PasswordHash = existingUser.PasswordHash;
 
                 user.UserId = user.UserId.Trim().ToUpper();
                 user.FirstName = user.FirstName.Trim();
@@ -909,30 +919,33 @@ namespace OmniFlex.Controllers
                 // Custom query to get sections with instructor information
                 using var conn = _factory.CreateConnection();
                 const string sql = @"
-                    SELECT 
-                        S.SECTION_ID AS SectionId,
-                        S.SECTION_LABEL AS SectionLabel,
-                        S.DEGREE AS Degree,
-                        S.BATCH AS Batch,
-                        SO.TEACHER_ID AS InstructorId,
-                        U.FIRST_NAME AS InstructorFirstName,
-                        U.LAST_NAME AS InstructorLastName
-                    FROM SECTIONS S
-                    JOIN SECTION_OFFERINGS SO ON SO.SECTION_ID = S.SECTION_ID
-                    JOIN SEMESTERS SM ON SO.SEMESTER_ID = SM.SEMESTER_ID
-                    LEFT JOIN USERS U ON SO.TEACHER_ID = U.USER_ID
-                    WHERE SO.COURSE_ID = :CourseId AND SM.IS_CURRENT = 1
-                    ORDER BY S.SECTION_ID";
+                SELECT 
+                    S.SECTION_ID    AS SectionId,
+                    S.SECTION_LABEL AS SectionLabel,
+                    S.DEGREE        AS Degree,
+                    S.BATCH         AS Batch,
+                    SO.TEACHER_ID   AS TeacherId,
+                    U.FIRST_NAME    AS InstructorFirstName,
+                    U.LAST_NAME     AS InstructorLastName
+                FROM SECTIONS S
+                JOIN SECTION_OFFERINGS SO ON SO.SECTION_ID = S.SECTION_ID
+                JOIN SEMESTERS SM          ON SO.SEMESTER_ID = SM.SEMESTER_ID
+                LEFT JOIN USERS U          ON SO.TEACHER_ID = U.USER_ID
+                WHERE SO.COURSE_ID = :CourseId 
+                AND SM.IS_CURRENT = 1
+                ORDER BY S.SECTION_ID";
                 
                 var sections = await conn.QueryAsync(sql, new { CourseId = courseId });
                 var sectionList = sections.Select(s => new
                 {
-                    sectionId = s.SectionId,
-                    sectionLabel = s.SectionLabel,
-                    degree = s.Degree,
-                    batch = s.Batch,
-                    instructorId = s.InstructorId as string,
-                    instructorName = !string.IsNullOrEmpty(s.InstructorId as string) ? $"{s.InstructorFirstName} {s.InstructorLastName}" : null
+                    sectionId    = (string)s.SECTIONID,
+                    sectionLabel = (string)s.SECTIONLABEL,
+                    degree       = (string)s.DEGREE,
+                    batch        = (int)s.BATCH,
+                    instructorId   = s.TEACHERID as string,
+                    instructorName = s.TEACHERID != null 
+                        ? $"{s.INSTRUCTORFIRSTNAME} {s.INSTRUCTORLASTNAME}" 
+                        : null
                 }).ToList();
 
                 return Json(new { success = true, data = sectionList });
@@ -952,29 +965,30 @@ namespace OmniFlex.Controllers
                 // Custom query to get assignments with course information
                 using var conn = _factory.CreateConnection();
                 const string sql = @"
-                    SELECT 
-                        SO.COURSE_ID AS CourseId,
-                        C.COURSE_NAME AS CourseName,
-                        S.SECTION_ID AS SectionId,
-                        S.SECTION_LABEL AS SectionLabel,
-                        S.DEGREE AS Degree,
-                        S.BATCH AS Batch
-                    FROM SECTIONS S
-                    JOIN SECTION_OFFERINGS SO ON SO.SECTION_ID = S.SECTION_ID
-                    JOIN SEMESTERS SM ON SO.SEMESTER_ID = SM.SEMESTER_ID
-                    JOIN COURSES C ON C.COURSE_ID = SO.COURSE_ID
-                    WHERE SO.TEACHER_ID = :InstructorId AND SM.IS_CURRENT = 1
-                    ORDER BY C.COURSE_ID, S.SECTION_ID";
-                
+                SELECT 
+                    SO.COURSE_ID     AS CourseId,
+                    C.COURSE_NAME    AS CourseName,
+                    S.SECTION_ID     AS SectionId,
+                    S.SECTION_LABEL  AS SectionLabel,
+                    S.DEGREE         AS Degree,
+                    S.BATCH          AS Batch
+                FROM SECTIONS S
+                JOIN SECTION_OFFERINGS SO ON SO.SECTION_ID = S.SECTION_ID
+                JOIN SEMESTERS SM          ON SO.SEMESTER_ID = SM.SEMESTER_ID
+                JOIN COURSES C             ON C.COURSE_ID = SO.COURSE_ID
+                WHERE SO.TEACHER_ID = :InstructorId 
+                AND SM.IS_CURRENT = 1
+                ORDER BY C.COURSE_ID";
+
                 var assignments = await conn.QueryAsync(sql, new { InstructorId = instructorId });
                 var assignmentList = assignments.Select(s => new
                 {
-                    courseId = s.CourseId,
-                    courseName = s.CourseName,
-                    sectionId = s.SectionId,
-                    sectionLabel = s.SectionLabel,
-                    degree = s.Degree,
-                    batch = s.Batch
+                    courseId     = (string)s.COURSEID,      // ← Oracle returns UPPERCASE
+                    courseName   = (string)s.COURSENAME,
+                    sectionId    = (string)s.SECTIONID,
+                    sectionLabel = (string)s.SECTIONLABEL,
+                    degree       = (string)s.DEGREE,
+                    batch        = (int)s.BATCH
                 }).ToList();
 
                 return Json(new { success = true, data = assignmentList });
@@ -1104,11 +1118,11 @@ namespace OmniFlex.Controllers
                     return Json(new { success = false, message = "User not found" });
 
                 // Verify current password
-                if (user.PasswordHash != request.CurrentPassword)
+                if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
                     return Json(new { success = false, message = "Current password is incorrect" });
 
                 // Update password
-                user.PasswordHash = request.NewPassword;
+                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
                 var result = await _users.UpdateAsync(user);
 
                 if (result > 0)

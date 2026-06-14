@@ -4,7 +4,8 @@ namespace OmniFlex.Models.Domain.Admin
     {
         public string AnnouncementId { get; set; } = string.Empty;
         public string PostedBy { get; set; } = string.Empty;
-        public string? SectionId { get; set; } // NULL = system-wide
+        public string? SectionId { get; set; } // Kept for backward compatibility
+        public string? OfferingId { get; set; } // NULL = system-wide
         public string Title { get; set; } = string.Empty;
         public string Content { get; set; } = string.Empty;
         public string Audience { get; set; } = "All";

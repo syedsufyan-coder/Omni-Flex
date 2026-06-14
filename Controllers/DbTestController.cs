@@ -5,7 +5,7 @@ using System.Data;
 // This controller is for testing the Database Connection only
 // Route is /home/dbtest
 
-namespace Omni_Flex.Controllers
+namespace OmniFlex.Controllers
 {
     public class DbTestController(IDbConnection db) : Controller
     {

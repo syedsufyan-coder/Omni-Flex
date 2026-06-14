@@ -1,4 +1,4 @@
-namespace Omni_Flex.Models
+namespace OmniFlex.Models
 {
     public class ErrorViewModel
     {

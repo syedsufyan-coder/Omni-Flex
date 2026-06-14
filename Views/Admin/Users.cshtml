@@ -141,15 +141,15 @@
                             <a class="page-link" href="@Url.Action(actionName, new { page = i })">@i</a>
                         </li>
                     }
-                    <li class="page-item @(Model.HasNext ? "" : "disabled")">
-                        <a class="page-link" href="@Url.Action(actionName, new { page = Model.CurrentPage + 1 })">
+                    <li class="page-item @((Model!.HasNext) ? "" : "disabled")">
+                        <a class="page-link" href="@Url.Action(actionName, new { page = Model!.CurrentPage + 1 })">
                             Next <i class="bi bi-chevron-right"></i>
                         </a>
                     </li>
                 </ul>
             </nav>
             <div class="text-center text-muted small">
-                Showing @Model.Items.Count of @Model.TotalItems users (Page @Model.CurrentPage of @Model.TotalPages)
+                Showing @Model!.Items!.Count of @Model!.TotalItems users (Page @Model!.CurrentPage of @Model!.TotalPages)
             </div>
         }
     </div>
@@ -202,14 +202,13 @@
                         <label class="form-label">Department <span class="text-danger">*</span></label>
                         <select id="add_deptId" class="form-select">
                             <option value="">-- Select Department --</option>
-                            <option value="CS">CS — Computer Science</option>
-                            <option value="AI">AI — Artificial Intelligence</option>
-                            <option value="SE">SE — Software Engineering</option>
-                            <option value="CY">CY — Cyber Security</option>
-                            <option value="DS">DS — Data Science</option>
-                            <option value="EE">EE — Electrical Engineering</option>
-                            <option value="SH">SH — Sciences & Humanities</option>
-                            <option value="MG">MG — Management</option>
+                            <option value="D01">D01 — Computer Science</option>
+                            <option value="D02">D02 — Software Engineering</option>
+                            <option value="D03">D03 — Information Technology</option>
+                            <option value="D04">D04 — Artificial Intelligence</option>
+                            <option value="D05">D05 — Data Science</option>
+                            <option value="D06">D06 — Cyber Security</option>
+                            <option value="D07">D07 — Computer Engineering</option>
                         </select>
                     </div>
                 </div>
@@ -251,13 +250,14 @@
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Degree Program <span class="text-danger">*</span></label>
                                 <select id="add_degree" class="form-select">
-                                    <option value="">-- Select Degree --</option>
-                                    <option value="BSCS">BS Computer Science</option>
-                                    <option value="BSAI">BS Artificial Intelligence</option>
-                                    <option value="BSSE">BS Software Engineering</option>
-                                    <option value="BSCY">BS Cyber Security</option>
-                                    <option value="BSDS">BS Data Science</option>
-                                    <option value="BSEE">BS Electrical Engineering</option>
+                                    <option value="">-- Select Department --</option>
+                                    <option value="D01">D01 — Computer Science</option>
+                                    <option value="D02">D02 — Software Engineering</option>
+                                    <option value="D03">D03 — Information Technology</option>
+                                    <option value="D04">D04 — Artificial Intelligence</option>
+                                    <option value="D05">D05 — Data Science</option>
+                                    <option value="D06">D06 — Cyber Security</option>
+                                    <option value="D07">D07 — Computer Engineering</option>
                                 </select>
                             </div>
                         </div>
@@ -416,14 +416,13 @@
                                 <td>
                                     <select id="edit_new_dept" class="form-select form-select-sm">
                                         <option value="">-- Select Department --</option>
-                                        <option value="CS">CS</option>
-                                        <option value="AI">AI</option>
-                                        <option value="SE">SE</option>
-                                        <option value="CY">CY</option>
-                                        <option value="DS">DS</option>
-                                        <option value="EE">EE</option>
-                                        <option value="SH">SH</option>
-                                        <option value="MG">MG</option>
+                                        <option value="D01">D01 — Computer Science</option>
+                                        <option value="D02">D02 — Software Engineering</option>
+                                        <option value="D03">D03 — Information Technology</option>
+                                        <option value="D04">D04 — Artificial Intelligence</option>
+                                        <option value="D05">D05 — Data Science</option>
+                                        <option value="D06">D06 — Cyber Security</option>
+                                        <option value="D07">D07 — Computer Engineering</option>
                                     </select>
                                 </td>
                             </tr>
