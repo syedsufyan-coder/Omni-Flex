@@ -1,0 +1,150 @@
+@model OmniFlex.Models.ViewModels.Student.CourseDetailsViewModel
+
+<div class="row gy-4">
+    <div class="col-12">
+        <div class="alert alert-primary shadow-sm">
+            <div class="d-flex align-items-center justify-content-between flex-column flex-md-row gap-3 mb-0">
+                <div>
+                    <h5 class="alert-heading mb-1">Course stream</h5>
+                    <p class="mb-0">All course updates, announcements and recent activity appear here.</p>
+                </div>
+                <span class="badge bg-white text-primary py-2 px-3">@Model.UpcomingDueCount upcoming items</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-xl-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="mb-4">
+                    <h5>Recent Activity</h5>
+                    <p class="text-muted">Stay updated with the latest posts from your instructor and peers.</p>
+                </div>
+
+                <div class="list-group list-group-flush">
+                    @if (Model.PostData?.Posts == null || !Model.PostData.Posts.Any())
+                    {
+                        <div class="text-center py-5">
+                            <i class="bi bi-chat-left-dots text-muted fs-1"></i>
+                            <p class="mt-3 text-muted">No announcements have been posted yet.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var post in Model.PostData.Posts)
+                        {
+                            <div class="list-group-item p-4 rounded-4 border mb-4 shadow-sm">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div>
+                                        <h6 class="mb-1 fw-bold">@post.Title</h6>
+                                        <small class="text-muted">
+                                            @post.PostedTimeAndDate.ToString("MMM dd") · @post.TeacherName
+                                        </small>
+                                    </div>
+                                    <span class="badge @(post.PostType == "Announcement" ? "bg-primary" : "bg-success")">
+                                        @post.PostType
+                                    </span>
+                                </div>
+
+                                <p class="mb-3 text-dark" style="white-space: pre-line;">@post.Content</p>
+
+                                @if (post.Attachments != null && post.Attachments.Any())
+                                {
+                                    <div class="mb-3">
+                                        <div class="d-flex flex-wrap gap-2">
+                                            @foreach (var file in post.Attachments)
+                                            {
+                                                <a href="@file.FilePath" class="btn btn-sm btn-outline-secondary rounded-pill" target="_blank">
+                                                    <i class="bi bi-paperclip"></i> @file.FileName
+                                                </a>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+
+                                <div class="mt-4 pt-3 border-top">
+                                    <div class="d-flex justify-content-between align-items-center gap-2 mb-3 flex-column flex-md-row">
+                                        <div>
+                                            <h6 class="small fw-bold text-muted mb-0">Comments (<span class="comments-count" data-post-id="@post.PostId">@(post.Comments?.Count ?? 0)</span>)</h6>
+                                        </div>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#commentsCollapse-@post.PostId" aria-expanded="false" aria-controls="commentsCollapse-@post.PostId">
+                                                View comments
+                                            </button>
+                                            <button class="btn btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#commentFormCollapse-@post.PostId" aria-expanded="false" aria-controls="commentFormCollapse-@post.PostId">
+                                                Add comment
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="collapse comments-collapse" id="commentsCollapse-@post.PostId">
+                                        <div class="comments-list" data-post-id="@post.PostId">
+                                            @if (post.Comments != null && post.Comments.Any())
+                                            {
+                                                @foreach (var comment in post.Comments)
+                                                {
+                                                    <div class="d-flex gap-3 mb-3">
+                                                        <div class="flex-shrink-0">
+                                                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                                                <span class="small fw-bold text-primary">@comment.CommentorName.Substring(0, 1)</span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="flex-grow-1 bg-light p-3 rounded-3">
+                                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                                <span class="small fw-bold">@comment.CommentorName</span>
+                                                                <span class="text-muted" style="font-size: 0.75rem;">@comment.CommentedTimeAndDate.ToString("t")</span>
+                                                            </div>
+                                                            <p class="small mb-0">@comment.Content</p>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <div class="text-muted small no-comments-message">No comments yet. Be the first to add one.</div>
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <div class="collapse mt-3" id="commentFormCollapse-@post.PostId">
+                                        <div class="input-group">
+                                            <textarea class="form-control form-control-sm comment-input" rows="2" data-post-id="@post.PostId" placeholder="Write a comment..."></textarea>
+                                            <button class="btn btn-primary comment-submit-btn" type="button" data-post-id="@post.PostId">Post</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-xl-4">
+        <div class="card shadow-sm border-0 sticky-top" style="top: 20px; z-index: 10;">
+            <div class="card-body">
+                <h6 class="text-uppercase text-muted mb-3 small fw-bold">About this course</h6>
+                <p class="mb-3 small">@Model.CourseDescription</p>
+                <div class="d-flex flex-column gap-2">
+                    <div class="d-flex justify-content-between border-bottom pb-2">
+                        <span class="text-muted small">Course code</span>
+                        <strong class="small">@Model.CourseId</strong>
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom pb-2">
+                        <span class="text-muted small">Section</span>
+                        <strong class="small">@Model.Section</strong>
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom pb-2">
+                        <span class="text-muted small">Batch</span>
+                        <strong class="small">@Model.Batch</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted small">Instructor</span>
+                        <strong class="small">@Model.InstructorName</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

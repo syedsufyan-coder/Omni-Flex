@@ -1,8 +1,8 @@
-namespace OmniFlex.Models.Domain.Admin
+namespace OmniFlex.Models.Domain.Student
 {
     public class Result
     {
-        public int ResultId { get; set; }
+        public long ResultId { get; set; }
         public string StudentId { get; set; } = string.Empty;
         public string SectionId { get; set; } = string.Empty;
         public string OfferingId { get; set; } = string.Empty;

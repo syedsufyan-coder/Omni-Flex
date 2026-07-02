@@ -1,0 +1,75 @@
+@model OmniFlex.Models.ViewModels.Student.CourseDetailsViewModel
+@{
+    ViewData["PageTitle"] = "Course Details";
+    ViewData["ActivePage"] = "Enrolled";
+    string activeTab = Model.ActiveTab?.ToLowerInvariant() ?? "stream";
+    string partialViewName = activeTab switch
+    {
+        "classwork" => "_CourseClasswork",
+        "people" => "_CoursePeople",
+        _ => "_CourseStream"
+    };
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-4">
+    <div>
+        <h1 class="h3 mb-1">@Model.CourseName</h1>
+        <div class="text-muted">
+            <span class="me-3"><strong>@Model.CourseId</strong></span>
+            <span class="me-3">@Model.Section</span>
+            <span>@Model.InstructorName</span>
+        </div>
+    </div>
+    <div class="btn-group">
+        <a class="btn btn-outline-secondary" asp-controller="Student" asp-action="Enrolled">
+            <i class="bi bi-arrow-left me-1"></i>Back to Classes
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4 border-0 position-sticky top-0 bg-white" style="z-index: 998;">
+    <div class="card-body py-2 px-0">
+        <ul class="nav nav-pills nav-fill course-tab-nav" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a class="nav-link tab-link @((activeTab == "stream") ? "active" : "")" href="@Url.Action("CourseDetails", "Student", new { courseId = Model.CourseId, tab = "stream" })">Stream</a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link tab-link @((activeTab == "classwork") ? "active" : "")" href="@Url.Action("CourseDetails", "Student", new { courseId = Model.CourseId, tab = "classwork" })">Classwork</a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link tab-link @((activeTab == "people") ? "active" : "")" href="@Url.Action("CourseDetails", "Student", new { courseId = Model.CourseId, tab = "people" })">People</a>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<div id="tab-content">
+    @await Html.PartialAsync(partialViewName, Model)
+</div>
+
+@section Styles {
+    <style>
+        .course-tab-nav {
+            min-height: 60px;
+            gap: .5rem;
+        }
+
+        .course-tab-nav .nav-link {
+            border-radius: .75rem;
+            padding: .85rem 1.25rem;
+            font-weight: 600;
+        }
+
+        .course-tab-nav .nav-link.active {
+            box-shadow: 0 8px 24px rgba(0, 123, 255, .12);
+        }
+
+        #tab-content {
+            min-height: 360px;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script src="~/js/course-details.js" asp-append-version="true"></script>
+}

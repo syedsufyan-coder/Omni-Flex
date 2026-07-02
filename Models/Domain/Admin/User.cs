@@ -12,6 +12,8 @@ namespace OmniFlex.Models.Domain.Admin
         public string Status { get; set; } = "Active";
         public int? Batch { get; set; }
         public string? Degree { get; set; }
+
+        // Instructor and Admin only
         public string? Designation { get; set; }
         public string? OfficeRoom { get; set; }
         public string? Specialization { get; set; }

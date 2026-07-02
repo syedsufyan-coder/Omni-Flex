@@ -1,0 +1,1009 @@
+using System.Data;           // Fixes DbType and ParameterDirection
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Globalization;
+using Dapper;
+using OmniFlex.Infrastructure;
+using OmniFlex.Models.DTOs;
+using OmniFlex.Models.Domain.Instructor;
+using OmniFlex.Models.Repositories.Admin;
+using OmniFlex.Models.Services;
+using OmniFlex.Models.ViewModels.Instructor;
+
+namespace OmniFlex.Models.Repositories.Instructor
+{
+    public class InstructorRepository : IInstructorRepository
+    {
+
+        private readonly DbConnectionFactory _factory;
+        private readonly ICourseRepository _courses;
+        private readonly ISectionRepository _sections;
+
+        public InstructorRepository(DbConnectionFactory factory, ICourseRepository courses, ISectionRepository sections)
+        {
+            _factory = factory;
+            _courses = courses;
+            _sections = sections;
+        }
+
+        public async Task<InstructorDashboardViewModel> GetDashboardAsync(string instructorId)
+        {
+            var profile = await BuildProfileAsync(instructorId);
+            var assignedClasses = await GetAssignedClassesAsync(instructorId);
+            var classCards = new List<InstructorAssignedClassCard>();
+
+            if (assignedClasses != null)
+            {
+                foreach (var assignedClass in assignedClasses)
+                {
+                    classCards.Add(new InstructorAssignedClassCard
+                    {
+                        OfferingId = assignedClass.OfferingId,
+                        CourseCode = assignedClass.CourseCode,
+                        CourseName = assignedClass.CourseName,
+                        Section = SectionHelper.GetFormattedSectionLabel(assignedClass.Degree, assignedClass.Section, assignedClass.Batch),
+                        CreditHrs = assignedClass.CreditHrs,
+                        CourseType = assignedClass.CourseType,
+                        EnrolledStudents = assignedClass.EnrolledStudents,
+                        Status = assignedClass.Status
+                    });
+                }
+            }
+
+            var courseCards = await GetCoursesAsync(instructorId);
+            if (courseCards != null)
+            {
+                foreach (var course in courseCards)
+                {
+                    course.BannerColorClass = EnrollmentHelper.GetRandomDarkHex();
+                    course.Section = SectionHelper.GetFormattedSectionLabel(course.Degree, course.Section, course.Batch);
+                }
+            }
+
+            var weeklySummary = new InstructorWeeklySummary
+            {
+                CurrentWeek = 5,
+                Semester = "Spring 2026",
+                QuizzesCompleted = 3,
+                QuizzesPending = 0,
+                AssignmentsCompleted = 3,
+                AssignmentsPending = 0,
+                MidsCompleted = 2,
+                MidsPending = 0,
+                FinalsCompleted = 1,
+                FinalsPending = 0
+            };
+
+            return new InstructorDashboardViewModel
+            {
+                GreetingMessage = GetGreeting(),
+                Profile = profile,
+                AssignedClasses = classCards,
+                WeeklySummary = weeklySummary,
+                Courses = courseCards
+            };
+        }
+
+        public async Task<IEnumerable<AssignedClassesDTO>> GetAssignedClassesAsync(string instructorId)
+        {
+            const string sql = @"SELECT 
+                    c.COURSE_ID            AS CourseCode,
+                    c.COURSE_NAME          AS CourseName,
+                    s.SECTION_LABEL        AS Section,
+                    s.BATCH                AS Batch,
+                    s.DEGREE               AS Degree,
+                    TO_CHAR(c.CREDIT_HRS)  AS CreditHrs,
+                    c.COURSE_TYPE          AS CourseType,
+    
+                    COUNT(e.ENROLL_ID)     AS EnrolledStudents,
+    
+                CASE 
+                    WHEN c.IS_ACTIVE = 1 THEN 'Active'
+                ELSE 'Inactive'
+                END                    AS Status
+
+                FROM SECTION_OFFERINGS so
+
+                JOIN COURSES c 
+                    ON c.COURSE_ID = so.COURSE_ID
+
+                JOIN SECTIONS s 
+                    ON s.SECTION_ID = so.SECTION_ID
+
+                LEFT JOIN ENROLLMENTS e 
+                ON e.OFFERING_ID = so.OFFERING_ID
+                AND e.STATUS = 'Registered'   -- only count active enrollments
+
+                -- Filter: only current semester
+                JOIN SEMESTERS sem 
+                    ON sem.SEMESTER_ID = so.SEMESTER_ID
+                    AND sem.IS_CURRENT = 1
+
+                -- Filter: classes assigned to instructor
+                WHERE so.TEACHER_ID = :InstructorId
+
+                GROUP BY 
+                c.COURSE_ID,
+                c.COURSE_NAME,
+                s.SECTION_LABEL,
+                s.BATCH,
+                s.DEGREE,
+                c.CREDIT_HRS,
+                c.COURSE_TYPE,
+                c.IS_ACTIVE";
+
+            using var conn = _factory.CreateConnection();
+
+            var result = await conn.QueryAsync<AssignedClassesDTO>(sql, new { InstructorId = instructorId });
+            return result ?? new List<AssignedClassesDTO>();
+        }
+
+        public async Task<List<InstructorCourseCard>> GetCoursesAsync(string instructorId)
+        {
+            const string sql = @"SELECT
+                        SO.OFFERING_ID    AS OfferingId,
+                        C.COURSE_ID       AS CourseCode,
+                        C.COURSE_NAME     AS CourseName,
+                        S.SECTION_LABEL   AS Section,
+                        S.BATCH           AS Batch,
+                        S.DEGREE          AS Degree,
+                        C.CREDIT_HRS       AS CreditHours,
+                        C.COURSE_TYPE     AS CourseType,
+                        'FALSE'              AS IsArchived, -- Assuming all courses are active for now
+                        COUNT(E.ENROLL_ID) AS StudentsCount
+
+                    FROM SECTION_OFFERINGS SO
+
+                    JOIN COURSES C 
+                        ON C.COURSE_ID = SO.COURSE_ID
+
+                    JOIN SECTIONS S 
+                        ON S.SECTION_ID = SO.SECTION_ID
+
+                    JOIN SEMESTERS SM 
+                        ON SM.SEMESTER_ID = SO.SEMESTER_ID AND SM.IS_CURRENT = 1
+
+                    LEFT JOIN ENROLLMENTS E 
+                        ON E.OFFERING_ID = SO.OFFERING_ID AND E.STATUS = 'Registered'
+
+                    WHERE SO.TEACHER_ID = :TeacherId
+
+                    GROUP BY 
+                        SO.OFFERING_ID,
+                        C.COURSE_ID,
+                        C.COURSE_NAME,
+                        S.SECTION_LABEL,
+                        S.BATCH,
+                        S.DEGREE,
+                        C.CREDIT_HRS,
+                        C.COURSE_TYPE,
+                        C.IS_ACTIVE
+
+                    ORDER BY C.COURSE_NAME";
+
+            using var conn = _factory.CreateConnection();
+
+            var result = await conn.QueryAsync<InstructorCourseCard>(sql, new { TeacherId = instructorId });
+            return result.ToList();
+        }
+
+        public async Task<InstructorClassroomViewModel> GetInstructorClassroomAsync(string offeringId)
+        {
+            const string sql_classroom = @"SELECT
+                    SO.OFFERING_ID     AS OfferingId,
+                    C.COURSE_ID        AS CourseId,
+                    C.COURSE_NAME      AS CourseName,
+                    S.SECTION_LABEL    AS SectionName,
+                    SM.SEMESTER_ID     AS Semester,
+                    SO.TEACHER_ID      AS InstructorId,
+
+                    COUNT(E.ENROLL_ID) AS EnrolledCount
+
+                FROM SECTION_OFFERINGS SO
+
+                JOIN COURSES C 
+                    ON C.COURSE_ID = SO.COURSE_ID
+
+                JOIN SECTIONS S 
+                    ON S.SECTION_ID = SO.SECTION_ID
+
+                JOIN SEMESTERS SM 
+                    ON SM.SEMESTER_ID = SO.SEMESTER_ID
+
+                LEFT JOIN ENROLLMENTS E 
+                    ON E.OFFERING_ID = SO.OFFERING_ID AND E.STATUS = 'Registered'
+
+                WHERE SO.OFFERING_ID = :OfferingId
+
+                GROUP BY
+                    SO.OFFERING_ID,
+                    C.COURSE_ID,
+                    C.COURSE_NAME,
+                    S.SECTION_LABEL,
+                    SM.SEMESTER_ID,
+                    SO.TEACHER_ID";
+
+            const string sql_posts = @"SELECT
+                        CP.POST_ID        AS PostId,
+                        CP.POSTED_BY      AS PostedBy,
+                        CP.POST_TYPE      AS PostType,
+                        CP.TITLE          AS Title,
+                        CP.CONTENT        AS Body,
+                        CP.CREATED_AT     AS PostedAt,
+                        U.FIRST_NAME || ' ' || U.LAST_NAME AS PostedByName
+
+                    FROM COURSE_POSTS CP
+
+                    LEFT JOIN USERS U 
+                        ON U.USER_ID = CP.POSTED_BY
+
+                    WHERE CP.OFFERING_ID = :OfferingId
+
+                    ORDER BY CP.CREATED_AT DESC";
+
+            const string sql_assignments = @"SELECT
+                                A.ASSIGNMENT_ID    AS AssignmentId,
+                                A.OFFERING_ID      AS OfferingId,
+                                A.TITLE            AS Title,
+                                A.DESCRIPTION      AS Description,
+                                A.DELIVERY_MODE    AS DeliveryMode,
+                                A.DUE_DATE         AS DueDate,
+                                A.CATEGORY         AS Category,
+                                A.TOTAL_MARKS      AS TotalMarks,
+                                A.ACTUAL_WTG       AS ActualWtg,
+                                A.IS_GRADED        AS IsGraded,
+                                A.GRADING_GROUP    AS GradingGroup,
+                                A.COUNT_BEST_OF    AS CountBestOf,
+                                A.CREATED_AT       AS CreatedAt,
+
+                                /* Total submissions for this assignment */
+                                COUNT(DISTINCT SUB.SUBMISSION_ID) AS SubmissionCount,
+
+                                /* Total enrolled students in offering */
+                                (
+                                    SELECT COUNT(*)
+                                    FROM ENROLLMENTS E
+                                    WHERE E.OFFERING_ID = A.OFFERING_ID
+                                    AND E.STATUS = 'Registered'
+                                ) AS TotalEnrolled
+
+                            FROM ASSIGNMENTS A
+
+                            LEFT JOIN SUBMISSIONS SUB 
+                                ON SUB.ASSIGNMENT_ID = A.ASSIGNMENT_ID
+
+                            WHERE A.OFFERING_ID = :OfferingId
+
+                            GROUP BY
+                                A.ASSIGNMENT_ID,
+                                A.OFFERING_ID,
+                                A.TITLE,
+                                A.DESCRIPTION,
+                                A.DELIVERY_MODE,
+                                A.DUE_DATE,
+                                A.CATEGORY,
+                                A.TOTAL_MARKS,
+                                A.ACTUAL_WTG,
+                                A.IS_GRADED,
+                                A.GRADING_GROUP,
+                                A.COUNT_BEST_OF,
+                                A.CREATED_AT
+
+                                ORDER BY A.CREATED_AT DESC";
+
+            const string sql_submissions = @"SELECT
+                                SUB.ASSIGNMENT_ID AS AssignmentId,
+                                SUB.SUBMISSION_ID     AS SubmissionId,
+                                ST.USER_ID            AS StudentId,
+                                ST.FIRST_NAME || ' ' || ST.LAST_NAME AS StudentName,
+                                SUB.SUBMIT_DATE       AS SubmitDate,
+                                SUB.OBTAINED_MARKS    AS ObtainedMarks,
+
+                                CASE WHEN SUB.IS_LATE = 'Y' THEN 'Yes' ELSE 'No' END AS IsLate,
+                                CASE WHEN SUB.LOCKED = 'Y' THEN 'Yes' ELSE 'No' END AS Locked
+
+                            FROM SUBMISSIONS SUB
+
+                            JOIN ENROLLMENTS E 
+                                ON E.ENROLL_ID = SUB.ENROLL_ID
+
+                            JOIN USERS ST 
+                                ON ST.USER_ID = E.STUDENT_ID
+
+                            WHERE SUB.ASSIGNMENT_ID IN :AssignmentIds
+                            ORDER BY ST.FIRST_NAME";
+
+            // Use UNION ALL to get counts from both tables in one go
+            const string sql_submission_counts = @"
+                        SELECT ASSIGNMENT_ID, COUNT(*) as TotalCount FROM (
+                            SELECT ASSIGNMENT_ID FROM SUBMISSIONS WHERE ASSIGNMENT_ID IN :Ids
+                            UNION ALL
+                            SELECT ASSIGNMENT_ID FROM EXAM_ENTRIES WHERE ASSIGNMENT_ID IN :Ids
+                        ) GROUP BY ASSIGNMENT_ID";
+
+            using var conn = _factory.CreateConnection();
+
+            var classroomInfo = await conn.QueryFirstOrDefaultAsync<InstructorClassroomViewModel>(sql_classroom, new { OfferingId = offeringId });
+            if (classroomInfo == null)
+            {
+                return new InstructorClassroomViewModel();
+            }
+            var posts = await conn.QueryAsync<InstructorCoursePostViewModel>(sql_posts, new { OfferingId = offeringId });
+            var assignments = await conn.QueryAsync<InstructorAssignmentViewModel>(sql_assignments, new { OfferingId = offeringId });
+            // 1. Extract IDs
+            var assignmentIds = assignments.Select(a => a.AssignmentId).ToArray();
+
+            // Get submission counts for all assignments
+            // Dapper handles the 'IN :Ids' array automatically
+            var counts = await conn.QueryAsync<(int AssignmentId, int TotalCount)>(sql_submission_counts, new { Ids = assignmentIds });
+            // Convert to Dictionary for O(1) lookups
+            var countMap = counts.ToDictionary(x => x.AssignmentId, x => x.TotalCount);
+
+            foreach (var assignment in assignments)
+            {
+                if (countMap.TryGetValue(assignment.AssignmentId, out int count))
+                {
+                    assignment.SubmissionCount = count;
+                }
+                else
+                {
+                    assignment.SubmissionCount = 0;
+                }
+            }
+
+            // 2. Guard against empty collections to prevent SQL syntax errors
+            IEnumerable<InstructorSubmissionSummaryViewModel> submissions = new List<InstructorSubmissionSummaryViewModel>();
+
+            if (assignmentIds.Any())
+            {
+                // Use @AssignmentIds so Dapper recognizes the expansion point
+                submissions = await conn.QueryAsync<InstructorSubmissionSummaryViewModel>(sql_submissions, new { AssignmentIds = assignmentIds });
+            }
+
+            // 3. Map submissions back to assignments
+            foreach (var assignment in assignments)
+            {
+                assignment.Submissions = submissions.Where(s => s.AssignmentId == assignment.AssignmentId).ToList();
+            }
+            classroomInfo.Posts = posts.ToList();
+            classroomInfo.Assignments = assignments.ToList();
+
+            return classroomInfo;
+        }
+
+        public async Task<InstructorPeopleViewModel> GetInstructorPeopleAsync(string offeringId)
+        {
+            const string sql_teacher = @"SELECT 
+                        U.FIRST_NAME || ' ' || U.LAST_NAME AS TeacherName,
+                        U.EMAIL AS TeacherEmail
+                    FROM SECTION_OFFERINGS SO
+                    JOIN USERS U ON SO.TEACHER_ID = U.USER_ID
+                    WHERE SO.OFFERING_ID = :Offering_ID";
+            const string sql_students = @"SELECT 
+                            U.USER_ID AS StudentId,
+                            U.FIRST_NAME || ' ' || U.LAST_NAME AS FullName,
+                            U.EMAIL AS Email
+                        FROM ENROLLMENTS E
+                        JOIN USERS U ON E.STUDENT_ID = U.USER_ID
+                        WHERE E.OFFERING_ID = :Offering_ID
+                        ORDER BY U.LAST_NAME, U.FIRST_NAME";
+            const string sql_ta = @"SELECT 
+                        U.USER_ID AS StudentId,
+                        U.FIRST_NAME || ' ' || U.LAST_NAME AS FullName,
+                        U.EMAIL AS Email
+                    FROM SECTION_OFFERINGS SO
+                    JOIN SECTION_TAS TA ON SO.SECTION_ID = TA.SECTION_ID 
+                        AND SO.COURSE_ID = TA.COURSE_ID 
+                        AND SO.SEMESTER_ID = TA.SEMESTER_ID
+                    JOIN USERS U ON TA.TA_ID = U.USER_ID
+                    WHERE SO.OFFERING_ID = :Offering_ID";
+
+            using var conn = _factory.CreateConnection();
+
+            var teacher = await conn.QueryFirstOrDefaultAsync<InstructorPeopleViewModel>(sql_teacher, new { Offering_ID = offeringId });
+            var students = await conn.QueryAsync<StudentsViewModel>(sql_students, new { Offering_ID = offeringId });
+            var ta = await conn.QueryFirstOrDefaultAsync<StudentsViewModel>(sql_ta, new { Offering_ID = offeringId });
+
+            var model = new InstructorPeopleViewModel
+            {
+                TeacherName = teacher?.TeacherName ?? "N/A",
+                TeacherEmail = teacher?.TeacherEmail ?? "N/A",
+                Students = students.ToList(),
+                TeachingAssistant = ta ?? null
+            };
+            return model;
+        }
+
+        public async Task<InstructorAssignmentViewModel> GetInstructorAssignmentDetailsAsync(int assignmentId)
+        {
+            const string sql = @"SELECT
+                    A.ASSIGNMENT_ID    AS AssignmentId,
+                    A.OFFERING_ID      AS OfferingId,
+                    A.TITLE            AS Title,
+                    A.DESCRIPTION      AS Description,
+                    A.DELIVERY_MODE    AS DeliveryMode,
+                    A.DUE_DATE         AS DueDate,
+                    A.CATEGORY         AS Category,
+                    A.TOTAL_MARKS      AS TotalMarks,
+                    A.ACTUAL_WTG       AS ActualWtg,
+                    A.IS_GRADED        AS IsGraded,
+                    A.GRADING_GROUP    AS GradingGroup,
+                    A.COUNT_BEST_OF    AS CountBestOf,
+                    A.CREATED_AT       AS CreatedAt,
+
+                    /* Count unique submissions for this specific assignment */
+                    (
+                        SELECT COUNT(SUBMISSION_ID) 
+                        FROM SUBMISSIONS 
+                        WHERE ASSIGNMENT_ID = A.ASSIGNMENT_ID
+                    ) AS SubmissionCount,
+
+                    /* Total registered students for the parent offering */
+                    (
+                        SELECT COUNT(*)
+                        FROM ENROLLMENTS E
+                        WHERE E.OFFERING_ID = A.OFFERING_ID
+                        AND E.STATUS = 'Registered'
+                    ) AS TotalEnrolled
+
+                FROM ASSIGNMENTS A
+                WHERE A.ASSIGNMENT_ID = :assignmentId";
+
+            const string sql_submission_count_onsite = @"SELECT 
+                            COUNT(DISTINCT ENROLL_ID) AS TotalSubmissions 
+                            FROM EXAM_ENTRIES 
+                            WHERE ASSIGNMENT_ID = :AssignmentId";
+
+            using var conn = _factory.CreateConnection();
+
+            var assignment = await conn.QueryFirstOrDefaultAsync<InstructorAssignmentViewModel>(sql, new { assignmentId = assignmentId });
+
+            if (assignment is not null && string.Equals(assignment.DeliveryMode, "Physical", StringComparison.OrdinalIgnoreCase))
+            {
+                var counts = await conn.QueryAsync<int>(sql_submission_count_onsite, new { AssignmentId = assignmentId });
+                assignment.SubmissionCount = counts.FirstOrDefault(); // Should only be one row, but we use FirstOrDefault to be safe
+            }
+
+            return assignment ?? new InstructorAssignmentViewModel();
+        }
+
+        public async Task<GradesViewModel> GetInstructorGradesGridAsync(string offeringId)
+        {
+            const string sql = @"SELECT 
+                        U.USER_ID AS StudentId,
+                        U.FIRST_NAME || ' ' || U.LAST_NAME AS StudentName,
+                        A.ASSIGNMENT_ID AS AssignmentId,
+                        A.TITLE AS AssignmentTitle,
+                        A.TOTAL_MARKS AS MaxMarks,
+                        A.DUE_DATE AS DueDate,
+                        -- Get marks from either Online Submissions or Physical Exam Entries
+                        COALESCE(S.OBTAINED_MARKS, E_ENT.MARKS_OBTAINED) AS ObtainedMarks
+                    FROM ENROLLMENTS E
+                    JOIN USERS U ON E.STUDENT_ID = U.USER_ID
+                    -- Cross Join with Assignments ensures we get a slot for every student for every assignment
+                    CROSS JOIN ASSIGNMENTS A 
+                    LEFT JOIN SUBMISSIONS S 
+                        ON S.ASSIGNMENT_ID = A.ASSIGNMENT_ID 
+                        AND S.ENROLL_ID = E.ENROLL_ID
+                    LEFT JOIN EXAM_ENTRIES E_ENT 
+                        ON E_ENT.ASSIGNMENT_ID = A.ASSIGNMENT_ID 
+                        AND E_ENT.ENROLL_ID = E.ENROLL_ID
+                    WHERE E.OFFERING_ID = :OfferingId
+                        AND A.OFFERING_ID = :OfferingId
+                        AND E.STATUS = 'Registered'
+                    ORDER BY U.LAST_NAME, U.FIRST_NAME, A.CREATED_AT";
+
+            using var conn = _factory.CreateConnection();
+
+
+            var flatData = await conn.QueryAsync<GradeGridDTO>(sql, new { OfferingId = offeringId });
+
+            var viewModel = new GradesViewModel();
+
+            // 1. Extract Unique Assignments for Headers
+            viewModel.Assignments = flatData
+                .GroupBy(d => d.AssignmentId)
+                .Select(g => new AssignmentHeaderViewModel
+                {
+                    AssignmentId = g.Key,
+                    Title = g.First().AssignmentTitle,
+                    MaxMarks = g.First().MaxMarks,
+                    DueDate = g.First().DueDate
+                }).ToList();
+
+            // 2. Group by Student to create Rows
+            viewModel.StudentRows = flatData
+                .GroupBy(d => d.StudentId)
+                .Select(g => new StudentGradeRowViewModel
+                {
+                    StudentId = g.Key,
+                    FullName = g.First().StudentName,
+                    Grades = g.ToDictionary(x => x.AssignmentId, x => x.ObtainedMarks)
+                }).ToList();
+
+            // 3. Calculate Class Averages per Assignment
+            foreach (var assn in viewModel.Assignments)
+            {
+                var allGradesForThisAssn = flatData
+                    .Where(d => d.AssignmentId == assn.AssignmentId && d.ObtainedMarks.HasValue)
+                    .Select(d => d.ObtainedMarks!.Value);
+
+                if (allGradesForThisAssn.Any())
+                    viewModel.AssignmentAverages[assn.AssignmentId] = allGradesForThisAssn.Average();
+            }
+
+            return viewModel;
+        }
+
+        public async Task<IEnumerable<Exam>> BulkUpsertGradesAsync(List<Exam> entries)
+        {
+            // Use your factory instead of 'new OracleConnection'
+            using var conn = _factory.CreateConnection();
+
+
+            using var trans = conn.BeginTransaction();
+            try
+            {
+                // Use the MERGE script we discussed
+                string sql = @"
+                            BEGIN
+                                IF :EntryId > 0 THEN
+                                    UPDATE EXAM_ENTRIES 
+                                    SET MARKS_OBTAINED = :MarksObtained,
+                                    EXAM_DATE = :ExamDate,
+                                    REMARKS = :Remarks,
+                                    UPDATED_BY = :UpdatedBy,
+                                    UPDATED_AT = :UpdatedAt
+                                    WHERE ENTRY_ID = :EntryId
+                                    RETURNING ENTRY_ID INTO :outId;
+                                ELSE
+                                    INSERT INTO EXAM_ENTRIES (ASSIGNMENT_ID, ENROLL_ID, MARKS_OBTAINED, EXAM_DATE, ENTERED_BY, ENTERED_AT, REMARKS)
+                                    VALUES (:AssignmentId, :EnrollmentId, :MarksObtained, :ExamDate, :EnteredBy, :EnteredAt, :Remarks)
+                                    RETURNING ENTRY_ID INTO :outId;
+                                END IF;
+                            END;";
+
+                foreach (var item in entries)
+                {
+                    var p = new DynamicParameters();
+                    p.Add("EntryId", item.EntryId);
+                    p.Add("MarksObtained", item.MarksObtained);
+                    p.Add("ExamDate", item.ExamDate);
+                    p.Add("Remarks", item.Remarks);
+                    p.Add("UpdatedBy", item.UpdatedBy);
+                    p.Add("UpdatedAt", item.UpdatedAt);
+                    p.Add("AssignmentId", item.AssignmentId);
+                    p.Add("EnrollmentId", item.EnrollmentId);
+                    p.Add("EnteredBy", item.EnteredBy);
+                    p.Add("EnteredAt", item.EnteredAt);
+
+                    // ParameterDirection requires 'using System.Data;'
+                    p.Add("outId", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+                    await conn.ExecuteAsync(sql, p, transaction: trans);
+
+                    // Retrieve the ID generated by Oracle
+                    item.EntryId = p.Get<int>("outId");
+                }
+
+                trans.Commit();
+                return entries;
+            }
+            catch (Exception)
+            {
+                trans.Rollback();
+                throw; // Re-throw to handle error logging in the controller/middleware
+            }
+        }
+        public async Task<int> AddCoursePostAsync(CoursePost post)
+        {
+            using var conn = _factory.CreateConnection();
+
+
+            // Wrapped in BEGIN/END so the RETURNING clause works in Oracle
+            string sql = @"
+                        BEGIN
+                            INSERT INTO COURSE_POSTS (
+                                OFFERING_ID, POSTED_BY, POST_TYPE, TITLE, CONTENT, CREATED_AT
+                            ) VALUES (
+                                :OfferingId, :PostedBy, :PostType, :Title, :Content, CURRENT_TIMESTAMP
+                            ) RETURNING POST_ID INTO :outId;
+                        END;";
+
+            var p = new DynamicParameters();
+            p.Add("OfferingId", post.OfferingId);
+            p.Add("PostedBy", post.PostedBy);
+            p.Add("PostType", post.PostType);
+            p.Add("Title", post.Title);
+            p.Add("Content", post.Content);
+            p.Add("outId", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+            await conn.ExecuteAsync(sql, p);
+
+            return p.Get<int>("outId");
+        }
+
+        public async Task<int> AddAssignmentAsync(Assignment assignment)
+        {
+            using var conn = _factory.CreateConnection();
+
+
+            using var trans = conn.BeginTransaction();
+            try
+            {
+                string sql = @"
+                    INSERT INTO ASSIGNMENTS (
+                        OFFERING_ID, TITLE, DESCRIPTION, DELIVERY_MODE, 
+                        DUE_DATE, CATEGORY, TOTAL_MARKS, ACTUAL_WTG, 
+                        IS_GRADED, GRADING_GROUP, COUNT_BEST_OF, CREATED_BY, CREATED_AT
+                    ) VALUES (
+                        :OfferingId, :Title, :Description, :DeliveryMode, 
+                        :DueDate, :Category, :TotalMarks, :ActualWeightage, 
+                        :IsGradedStr, :GradingGroup, :CountBestOf, :CreatedBy, :CreatedAt
+                    ) RETURNING ASSIGNMENT_ID INTO :AssignmentId";
+
+                var parameters = new DynamicParameters();
+                parameters.Add("OfferingId", assignment.OfferingId);
+                parameters.Add("Title", assignment.Title);
+                parameters.Add("Description", assignment.Description);
+                parameters.Add("DeliveryMode", assignment.DeliveryMode);
+                parameters.Add("DueDate", assignment.DueDate);
+                parameters.Add("Category", assignment.Category);
+                parameters.Add("TotalMarks", assignment.TotalMarks);
+                parameters.Add("ActualWeightage", assignment.ActualWtg);
+                // Database is CHAR(1), map bool to 'Y'/'N'
+                parameters.Add("IsGradedStr", assignment.IsGraded);
+                parameters.Add("GradingGroup", assignment.GradingGroup);
+                parameters.Add("CountBestOf", assignment.CountBestOf);
+                parameters.Add("CreatedBy", assignment.CreatedBy);
+                parameters.Add("CreatedAt", assignment.CreatedAt);
+                parameters.Add("AssignmentId", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+                // Pass the transaction here
+                await conn.ExecuteAsync(sql, parameters, transaction: trans);
+
+                int newId = parameters.Get<int>("AssignmentId");
+
+                trans.Commit();
+                return newId;
+            }
+            catch (Exception)
+            {
+                trans.Rollback();
+                throw; // Re-throw to be caught by the Controller
+            }
+        }
+
+        public async Task<IEnumerable<Attendance>> BulkAddAttendanceRecordsAsync(List<Attendance> entries)
+        {
+            using var conn = _factory.CreateConnection();
+
+
+            using var trans = conn.BeginTransaction();
+            try
+            {
+                // Oracle PL/SQL block to handle insert and return ID
+                string sql = @"
+            BEGIN
+                INSERT INTO ATTENDANCE (ENROLL_ID, ATTENDANCE_DATE, STATUS, MARKED_BY, DURATION)
+                VALUES (:EnrollId, :AttendanceDate, :Status, :MarkedBy, :Duration)
+                RETURNING ATTENDANCE_ID INTO :outId;
+            END;";
+
+                foreach (var item in entries)
+                {
+                    var p = new DynamicParameters();
+                    p.Add("EnrollId", item.EnrollId);
+                    p.Add("AttendanceDate", item.AttendanceDate);
+                    p.Add("Status", item.Status);
+                    p.Add("MarkedBy", item.MarkedBy);
+                    p.Add("Duration", item.Duration);
+
+                    // Output parameter to catch the IDENTITY/SEQUENCE value
+                    p.Add("outId", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+                    await conn.ExecuteAsync(sql, p, transaction: trans);
+
+                    // Update the model with the DB-generated ID
+                    item.AttendanceId = p.Get<int>("outId");
+                }
+
+                trans.Commit();
+                return entries;
+            }
+            catch (Exception)
+            {
+                trans.Rollback();
+                throw;
+            }
+        }
+
+        public async Task<bool> UpdateAttendanceStatusAsync(int attendanceId, string status)
+        {
+            using var conn = _factory.CreateConnection();
+
+
+            using var trans = conn.BeginTransaction();
+            try
+            {
+                string sql = @"
+                    UPDATE ATTENDANCE 
+                    SET STATUS = :Status 
+                    WHERE ATTENDANCE_ID = :AttendanceId";
+
+                // We pass the transaction object to ExecuteAsync
+                int rowsAffected = await conn.ExecuteAsync(sql, new
+                {
+                    Status = status,
+                    AttendanceId = attendanceId
+                }, transaction: trans);
+
+                // Commit the changes to the database
+                trans.Commit();
+
+                return rowsAffected > 0;
+            }
+            catch (Exception)
+            {
+                // Rollback ensures no partial or corrupt state if the DB connection hiccups
+                trans.Rollback();
+                throw;
+            }
+        }
+
+        public async Task<InstructorWeeklyCalendarViewModel> GetWeeklyCalendarAsync(string instructorId)
+        {
+            var dashboard = await GetDashboardAsync(instructorId);
+            return new InstructorWeeklyCalendarViewModel
+            {
+                GreetingMessage = dashboard.GreetingMessage,
+                Profile = dashboard.Profile,
+                Summary = dashboard.WeeklySummary,
+                AssignedCourses = dashboard.Courses ?? new List<InstructorCourseCard>()
+            };
+        }
+
+        public async Task<InstructorAttendanceViewModel> GetManageAttendanceModelAsync(string instructorId, string? selectedCourseId = null, string? selectedSectionId = null, string? selectedMonth = null)
+        {
+            // 1. Basic Setup & Options
+            var profile = await BuildProfileAsync(instructorId);
+            var courseDtos = (await _courses.GetByTeacherWithDetailsAsync(instructorId))?.ToList() ?? new List<CourseDto>();
+            var sectionDtos = (await _sections.GetByTeacherAsync(instructorId))?.ToList() ?? new List<SectionsDto>();
+
+            var courseOptions = courseDtos.Select(c => new SelectOption { Value = c.CourseId, Label = $"{c.CourseId} - {c.CourseName}" }).ToList();
+            var sectionOptions = sectionDtos.Select(s => new SelectOption { Value = s.SectionId, Label = SectionHelper.GetFormattedSectionLabel(s.Degree, s.SectionLabel, s.Batch) }).ToList();
+
+            selectedCourseId ??= courseOptions.FirstOrDefault()?.Value ?? string.Empty;
+            selectedSectionId ??= sectionOptions.FirstOrDefault()?.Value ?? string.Empty;
+
+            if(selectedMonth == null)
+            {
+                // Default to current month name, e.g., "May"
+                selectedMonth = DateTime.Now.ToString("MMMM");
+            }
+
+            // 2. Fetch Data from DB
+            // You'll need a repo method that returns a flat list of students + their attendance for that month
+            var flatData = await GetAttendanceReportAsync(selectedCourseId, selectedSectionId, selectedMonth);
+            // 3. Pivot the Data
+            // Group by student so we have one row per student
+
+            var studentRows = flatData
+                .GroupBy(f => new { f.EnrollId, f.StudentId, f.FullName })
+                .Select((group, index) => new InstructorAttendanceStudentRow
+                {
+                    SNo = index + 1,
+                    EnrollId = group.Key.EnrollId,
+                    RollNo = group.Key.StudentId, // Using USER_ID as Roll No
+                    FullName = group.Key.FullName,
+                    Attendances = group
+                        .Where(x => x.AttendanceId > 0) // Only include actual records
+                        .Select(a => new AttendanceRecordViewModel
+                        {
+                            AttendanceId = a.AttendanceId,
+                            Date = a.AttendanceDate,
+                            Status = a.Status
+                        })
+                        .OrderBy(a => a.Date)
+                        .ToList()
+                }).ToList();
+
+            // 4. Construct Final ViewModel
+            return new InstructorAttendanceViewModel
+            {
+                InstructorName = profile.FullName,
+                CourseOptions = courseOptions,
+                SectionOptions = sectionOptions,
+                SelectedCourseId = selectedCourseId,
+                SelectedSectionId = selectedSectionId,
+                SelectedMonth = selectedMonth ?? DateTime.Now.ToString("MMMM"),
+                Students = studentRows,
+                // Optional: Helpers for the Duration dropdown
+                DurationOptions = new List<SelectOption> {
+                    new() { Value = "1", Label = "1 Hour" },
+                    new() { Value = "1.5", Label = "1.5 Hours" },
+                    new() { Value = "2", Label = "2 Hours" },
+                    new() { Value = "2.5", Label = "2.5 Hours" },
+                    new() { Value = "3", Label = "3 Hours" }
+                }
+            };
+        }
+
+        private static string GetGreeting()
+        {
+            var hour = DateTime.Now.Hour;
+            return hour < 12 ? "Good morning"
+                 : hour < 17 ? "Good afternoon"
+                 : "Good evening";
+        }
+        public async Task<int> GetEnrollmentIDAsync(string studentId, string offeringId)
+        {
+            const string sql = @"SELECT ENROLL_ID FROM ENROLLMENTS WHERE STUDENT_ID = :StudentId AND OFFERING_ID = :OfferingId AND STATUS = 'Registered'";
+            using var conn = _factory.CreateConnection();
+
+            var enrollId = await conn.QueryFirstOrDefaultAsync<int?>(sql, new { StudentId = studentId, OfferingId = offeringId });
+            return enrollId ?? 0;
+        }
+        public async Task<List<int>> GetEnrollmentIDsForAttendace(string courseId, string sectionId)
+        {
+            string sql = @"
+                            SELECT e.ENROLL_ID 
+                            FROM COURSE_ENROLLMENTS e
+                            INNER JOIN SECTION_OFFERINGS o ON e.OFFERING_ID = o.OFFERING_ID
+                            WHERE o.COURSE_ID = :CourseId AND o.SECTION_ID = :SectionId";
+
+            using var conn = _factory.CreateConnection();
+
+            var enrollIds = await conn.QueryFirstOrDefaultAsync<List<int>>(sql, new { CourseId = courseId, SectionId = sectionId });
+
+            return enrollIds ?? new List<int>();
+
+        }
+
+        public async Task<IEnumerable<AttendanceFlatDto>> GetAttendanceReportAsync(string courseId, string sectionId, string month)
+        {
+            using var conn = _factory.CreateConnection();
+
+
+            // Convert month name to number if necessary, e.g., "May" -> "05"
+            string monthNum = DateTime.ParseExact(month, "MMMM", CultureInfo.InvariantCulture).ToString("mm");
+            string currentYear = DateTime.Now.Year.ToString();
+
+            string sql = @"SELECT 
+                    e.ENROLL_ID,
+                    u.USER_ID AS StudentId,
+                    u.FIRST_NAME || ' ' || u.LAST_NAME AS FullName,
+                    NVL(a.ATTENDANCE_ID, 0) AS AttendanceId,
+                    a.ATTENDANCE_DATE AS AttendanceDate,
+                    a.DURATION AS Duration,
+                    a.STATUS
+                FROM ENROLLMENTS e
+                JOIN USERS u ON e.STUDENT_ID = u.USER_ID
+                JOIN SECTION_OFFERINGS so ON e.OFFERING_ID = so.OFFERING_ID
+                LEFT JOIN ATTENDANCE a ON e.ENROLL_ID = a.ENROLL_ID 
+                    AND TO_CHAR(a.ATTENDANCE_DATE, 'MM') = :MonthNumber -- Pass '05' for May
+                    AND TO_CHAR(a.ATTENDANCE_DATE, 'YYYY') = :Year     -- Always filter by year
+                WHERE so.COURSE_ID = :CourseId 
+                    AND so.SECTION_ID = :SectionId
+                ORDER BY u.USER_ID, a.ATTENDANCE_DATE ASC";
+
+            return await conn.QueryAsync<AttendanceFlatDto>(sql, new
+            {
+                CourseId = courseId,
+                SectionId = sectionId,
+                MonthNumber = monthNum,
+                Year = currentYear
+            });
+        }
+        public async Task<OnsiteExamViewModel> GetOnsiteAssignmentDetailsAsync(string offeringId, int assignmentId)
+        {
+            const string sql = @"SELECT 
+                    E.ENROLL_ID AS EnrollmentId, 
+                    U.FIRST_NAME || ' ' || U.LAST_NAME AS StudentName, 
+                    U.USER_ID AS StudentId, 
+                    E_ENT.ENTRY_ID AS EntryId, 
+                    E_ENT.MARKS_OBTAINED AS MarksObtained, 
+                    E_ENT.EXAM_DATE AS ExamDate, 
+                    E_ENT.REMARKS AS Remarks 
+                FROM ENROLLMENTS E 
+                JOIN USERS U ON E.STUDENT_ID = U.USER_ID 
+                -- Keep the LEFT JOIN so students with no marks yet still appear in the list
+                LEFT JOIN EXAM_ENTRIES E_ENT 
+                    ON E_ENT.ENROLL_ID = E.ENROLL_ID 
+                    AND E_ENT.ASSIGNMENT_ID = :AssignmentId
+                -- Filter by the specific section/offering instead of one student
+                WHERE E.OFFERING_ID = :OfferingId 
+                    AND E.STATUS = 'Registered'
+                ORDER BY StudentId ASC";
+
+            const string metaSql = @"SELECT TOTAL_MARKS 
+                        FROM ASSIGNMENTS 
+                        WHERE ASSIGNMENT_ID = :AssignmentId";
+
+            using var conn = _factory.CreateConnection();
+
+
+            // 🔹 Get students + exam entries
+            var students = (await conn.QueryAsync<OnsiteStudentRow>(
+                sql,
+                new { OfferingId = offeringId, AssignmentId = assignmentId }
+            )).ToList();
+
+            // 🔹 Get total marks
+            var totalMarks = await conn.ExecuteScalarAsync<decimal>(
+                metaSql,
+                new { AssignmentId = assignmentId }
+            );
+
+            // 🔹 Wrap into ViewModel
+            return new OnsiteExamViewModel
+            {
+                AssignmentId = assignmentId,
+                TotalMarks = totalMarks,
+                Students = students
+            };
+        }
+        public async Task<int> GradeAssignmentPhysicalAsync(int assignmentId, int enrollmentId, string teacherId, decimal marksObtained, string remarks, DateTime ExamDate)
+        {
+            const string sql = @"INSERT INTO EXAM_ENTRIES (ASSIGNMENT_ID, ENROLL_ID, TEACHER_ID, MARKS_OBTAINED, REMARKS, EXAM_DATE) VALUES (:AssignmentId, :EnrollmentId, :TeacherId, :MarksObtained, :Remarks, :ExamDate) RETURNING EXAM_ENTRY_ID";
+            using var conn = _factory.CreateConnection();
+
+            var examEntryId = await conn.QueryFirstOrDefaultAsync<int>(sql, new { AssignmentId = assignmentId, EnrollmentId = enrollmentId, TeacherId = teacherId, MarksObtained = marksObtained, Remarks = remarks, ExamDate = ExamDate });
+            return examEntryId;
+        }
+        private async Task<InstructorProfileInfo> BuildProfileAsync(string instructorId)
+        {
+            const string sql = @"SELECT 
+                    USER_ID AS InstructorId,
+                    FIRST_NAME || ' ' || LAST_NAME AS FullName,
+                    DESIGNATION AS Designation,
+                    OFFICE_ROOM AS OfficeRoom,
+                    SPECIALIZATION AS Specialization,
+                    STATUS AS Status,
+                    GENDER AS Gender,
+                    EMAIL AS Email,
+                    DOB AS DOB, -- Formats Date to String
+                    PHONE_NUMBER AS MobileNo,
+                    'N/A' AS BloodGroup,
+                    'Pakistani' AS Nationality,
+                    ADDRESS AS Address,
+                    'N/A' AS HomePhone,
+                    'N/A' AS PostalCode,
+                    CITY AS City,
+                    COUNTRY AS Country
+                FROM USERS
+                WHERE USER_ID = :InstructorId AND ROLE = 'Instructor'";
+
+            using var conn = _factory.CreateConnection();
+
+            var result = await conn.QueryFirstOrDefaultAsync<InstructorProfileInfo>(sql, new { InstructorId = instructorId });
+            return result ?? new InstructorProfileInfo();
+        }
+
+        private static List<InstructorCourseCard> MapCourseCards(IEnumerable<CourseDto>? courses)
+        {
+            if (courses == null)
+            {
+                return new List<InstructorCourseCard>();
+            }
+
+            var courseCards = courses.Select(c => new InstructorCourseCard
+            {
+                CourseCode = $"C{c.CourseId:D3}",
+                CourseName = c.CourseName,
+                Section = "Section A",
+                Degree = "BSCS",
+                Batch = 2025,
+                CreditHours = int.TryParse(c.CreditHours, out var creditHrs) ? creditHrs : 3,
+                CourseType = c.CourseType,
+                StudentsCount = 24,
+                BannerColorClass = EnrollmentHelper.GetRandomDarkHex(),
+                IsArchived = false
+            }).ToList();
+
+            return courseCards;
+        }
+    }
+}

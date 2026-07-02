@@ -1,0 +1,55 @@
+@model OmniFlex.Models.ViewModels.Instructor.InstructorAssignmentViewModel
+
+<div class="p-3">
+    <h5 class="fw-bold mb-3">Grade Online Assignment</h5>
+
+    <div class="table-responsive">
+        <table class="table table-sm align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Student</th>
+                    <th>Submitted</th>
+                    <th>Marks</th>
+                    <th>Grade</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var s in Model.Submissions ?? new List<OmniFlex.Models.ViewModels.Instructor.InstructorSubmissionSummaryViewModel>())
+                {
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">@s.StudentName</div>
+                            <div class="text-muted small">@s.StudentId</div>
+                        </td>
+
+                        <td class="small">
+                            @s.SubmitDate?.ToString("dd MMM, hh:mm tt")
+                        </td>
+
+                        <td>
+                            @if (s.IsGraded)
+                            {
+                                <span class="badge bg-success mb-1">Graded</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary mb-1">Pending</span>
+                            }
+
+                            <input type="number" class="form-control form-control-sm grade-input mt-1"
+                                   value="@s.ObtainedMarks" min="0" max="@Model.TotalMarks"
+                                   data-submission-id="@s.SubmissionId" @(s.IsLocked ? "disabled" : "") />
+                        </td>
+
+                        <td>
+                            <button class="btn btn-sm btn-success btn-save-online-grade"
+                                    data-submission-id="@s.SubmissionId">
+                                Save
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

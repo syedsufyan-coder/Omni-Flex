@@ -37,4 +37,12 @@ $(function(){
     $btn.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Signing in...');
     setTimeout(function(){ window.location = '/admin/dashboard'; }, 1500);
   });
+
+  // Ensure the browser back button on the login page returns to home.
+  if (window.location.pathname.toLowerCase().endsWith('/auth/login')) {
+    window.history.pushState({ loginPage: true }, '', window.location.href);
+    window.addEventListener('popstate', function(event) {
+      window.location.href = '/';
+    });
+  }
 });

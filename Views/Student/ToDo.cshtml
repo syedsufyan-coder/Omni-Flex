@@ -1,0 +1,112 @@
+@model OmniFlex.Models.ViewModels.Student.ToDoViewModel
+@{
+    ViewData["PageTitle"] = "TO-DO";
+}
+
+<div class="mb-3">
+    <button class="btn btn-outline-primary me-2 todo-tab active" data-target="#assigned">Assigned</button>
+    <button class="btn btn-outline-primary me-2 todo-tab" data-target="#missing">Missing</button>
+    <button class="btn btn-outline-primary todo-tab" data-target="#done">Done</button>
+</div>
+
+<div id="assigned" class="todo-panel">
+    @if (Model.AssignedItems != null)
+    {
+        foreach (var courseGroup in Model.AssignedItems.GroupBy(x => x.CourseName))
+        {
+            var groupId = courseGroup.Key.Replace(" ", "_");
+            <div class="card mb-2">
+                <div class="card-header d-flex justify-content-between align-items-center" style="cursor:pointer" data-toggle="accordion" data-target="#@groupId">
+                    <div><span class="badge @courseGroup.First().CourseColorClass me-2">&nbsp;</span> @courseGroup.Key</div>
+                    <i class="bi bi-chevron-down"></i>
+                </div>
+                <div class="card-body collapse show" id="@groupId">
+                    @foreach (var item in courseGroup)
+                    {
+                        <div class="d-flex justify-content-between align-items-center py-1">
+                            <div>@item.AssignmentTitle</div>
+                            <div><small>Due: @item.DueDate:dd MMM yyyy</small> <span class="badge bg-secondary">@item.Status</span></div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<div id="missing" class="todo-panel d-none">
+    @if (Model.MissingItems != null)
+    {
+        foreach (var courseGroup in Model.MissingItems.GroupBy(x => x.CourseName))
+        {
+            var groupId = courseGroup.Key.Replace(" ", "_");
+            <div class="card mb-2">
+                <div class="card-header d-flex justify-content-between align-items-center" style="cursor:pointer" data-toggle="accordion" data-target="#miss_@groupId">
+                    <div><span class="badge @courseGroup.First().CourseColorClass me-2">&nbsp;</span> @courseGroup.Key</div>
+                    <i class="bi bi-chevron-down"></i>
+                </div>
+                <div class="card-body collapse show" id="miss_@groupId">
+                    @foreach (var item in courseGroup)
+                    {
+                        <div class="d-flex justify-content-between align-items-center py-1">
+                            <div>@item.AssignmentTitle</div>
+                            <div><small>Due: @item.DueDate:dd MMM yyyy</small> <span class="badge bg-danger">@item.Status</span></div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<div id="done" class="todo-panel d-none">
+    @if (Model.DoneItems != null)
+    {
+        foreach (var courseGroup in Model.DoneItems.GroupBy(x => x.CourseName))
+        {
+            var groupId = courseGroup.Key.Replace(" ", "_");
+            <div class="card mb-2">
+                <div class="card-header d-flex justify-content-between align-items-center" style="cursor:pointer" data-toggle="accordion" data-target="#done_@groupId">
+                    <div><span class="badge @courseGroup.First().CourseColorClass me-2">&nbsp;</span> @courseGroup.Key</div>
+                    <i class="bi bi-chevron-down"></i>
+                </div>
+                <div class="card-body collapse show" id="done_@groupId">
+                    @foreach (var item in courseGroup)
+                    {
+                        <div class="d-flex justify-content-between align-items-center py-1">
+                            <div>@item.AssignmentTitle</div>
+                            <div><small>Due: @item.DueDate:dd MMM yyyy</small> <span class="badge bg-success">@item.Status</span></div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.todo-tab').forEach(function(btn){
+            btn.addEventListener('click', function(){
+                document.querySelectorAll('.todo-tab').forEach(el=>el.classList.remove('active'));
+                btn.classList.add('active');
+                document.querySelectorAll('.todo-panel').forEach(function(panel){
+                    panel.classList.add('d-none');
+                });
+                document.querySelector(btn.getAttribute('data-target')).classList.remove('d-none');
+            });
+        });
+        document.querySelectorAll('[data-toggle="accordion"]').forEach(function(hdr){
+            hdr.addEventListener('click', function(){
+                var target = document.querySelector(hdr.getAttribute('data-target'));
+                if (target.classList.contains('show')) {
+                    target.classList.remove('show');
+                    target.style.display='none';
+                } else {
+                    target.classList.add('show');
+                    target.style.display='block';
+                }
+            });
+        });
+    </script>
+}

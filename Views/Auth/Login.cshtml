@@ -1,18 +1,20 @@
 @model OmniFlex.Models.ViewModels.LoginViewModel
 @{
-    Layout = "_Layout";
-    ViewData["Title"] = "Sign In";
+  Layout = "_Layout";
+  ViewData["Title"] = "Sign In";
 }
 
 @section Styles {
-    <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+  <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
 }
 
 <main class="bg-mesh auth d-flex align-items-center justify-content-center" style="min-height:100vh">
   <div class="card auth-card animate__animated animate__zoomIn">
     <div class="card-body">
       <div class="d-flex align-items-center gap-3 mb-3">
-        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z" fill="#1E40AF"/></svg>
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 2L2 7l10 5 10-5-10-5z" fill="#1E40AF" />
+        </svg>
         <div>
           <h5 class="m-0" style="font-family:Sora">OMNI-FLEX</h5>
           <div class="d-flex align-items-center gap-2">
@@ -26,44 +28,88 @@
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="Role" />
 
-        <div class="mb-3">
-          <label asp-for="UserId" class="form-label">Employee / Roll Number</label>
-          <input asp-for="UserId" class="form-control" placeholder="e.g. 21L-1234" />
-          <span asp-validation-for="UserId" class="text-danger small"></span>
-        </div>
+        @if (Model.Role != null)
+        {
+          string? IdLabel = null;
+          string? IdPlaceholder = null;
+          @if (Model.Role == "admin")
+          {
+            IdLabel = "Administrator ID";
+            IdPlaceholder = "e.g. A-0016";
+            <script>
+                      document.getElementById('roleIcon').classList.add('bi-shield-check');
+            </script>
+          }
+          else if (Model.Role == "instructor")
+          {
+            IdLabel = "Instructor ID";
+            IdPlaceholder = "e.g. F-0012";
+            <script>
+                      document.getElementById('roleIcon').classList.add('bi-person-workspace');
+            </script>
+          }
+          else if (Model.Role == "ta")
+          {
+            IdLabel = "Teaching Assistant ID";
+            IdPlaceholder = "e.g. T-0008";
+            <script>
+                      document.getElementById('roleIcon').classList.add('bi-clipboard2-check');
+            </script>
+          }
+          else if (Model.Role == "student")
+          {
+            IdLabel = "Student ID";
+            IdPlaceholder = "e.g. 21K-0024";
+            <script>
+                      document.getElementById('roleIcon').classList.add('bi-book-half');
+            </script>
+          }
+          <div class="mb-3">
+            <label asp-for="UserId" class="form-label">@IdLabel</label>
+            <input asp-for="UserId" class="form-control" placeholder="@IdPlaceholder" />
+            <span asp-validation-for="UserId" class="text-danger small"></span>
+          </div>
+        }
+        else
+        {
+          <div class="alert alert-warning py-2 small">
+            No role selected. Please go back and choose a role to sign in.
+          </div>
+        }
 
         <div class="mb-3">
           <label asp-for="Password" class="form-label">Password</label>
           <div class="input-group">
             <input asp-for="Password" type="password" class="form-control" id="passwordInput" />
-            <button class="btn btn-outline-secondary" type="button" id="togglePassword" tabindex="-1"><i class="bi bi-eye" id="eyeIcon"></i></button>
+            <button class="btn btn-outline-secondary" type="button" id="togglePassword" tabindex="-1"><i
+              class="bi bi-eye" id="eyeIcon"></i></button>
+            </div>
+            <span asp-validation-for="Password" class="text-danger small"></span>
           </div>
-          <span asp-validation-for="Password" class="text-danger small"></span>
-        </div>
 
-        <div class="form-check mb-3">
-          <input class="form-check-input" type="checkbox" id="rememberMe" name="rememberMe" />
-          <label class="form-check-label" for="rememberMe">
-            Remember me
-          </label>
-        </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="rememberMe" name="rememberMe" />
+            <label class="form-check-label" for="rememberMe">
+              Remember me
+            </label>
+          </div>
 
-        @if (!ViewData.ModelState.IsValid)
-        {
+          @if (!ViewData.ModelState.IsValid)
+          {
             <div class="alert alert-danger py-2 small">
               Invalid credentials. Please try again.
             </div>
-        }
+          }
 
-        <button type="submit" class="btn btn-primary w-100 rounded-pill">Sign In</button>
-        <div class="text-center mt-3"><a class="text-muted" href="#">Forgot password?</a></div>
-      </form>
+          <button type="submit" class="btn btn-primary w-100 rounded-pill">Sign In</button>
+          <div class="text-center mt-3"><a class="text-muted" href="#">Forgot password?</a></div>
+        </form>
 
-      <div class="text-center auth-back mt-3"><a href="/" class="text-white-50">? Back to Portal</a></div>
+        <div class="text-center auth-back mt-3"><a href="/" class="text-white-50">? Back to Portal</a></div>
+      </div>
     </div>
-  </div>
-</main>
+  </main>
 
-@section Scripts {
+  @section Scripts {
     <script src="~/js/auth.js" asp-append-version="true"></script>
-}
+  }

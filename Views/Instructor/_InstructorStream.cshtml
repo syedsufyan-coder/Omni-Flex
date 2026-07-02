@@ -1,0 +1,102 @@
+@model OmniFlex.Models.ViewModels.Instructor.InstructorClassroomViewModel
+
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card shadow-sm mb-3 border-0">
+      <div class="card-body d-flex align-items-center gap-3 flex-wrap">
+        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width:40px;height:40px;">
+          <i class="bi bi-person-fill"></i>
+        </div>
+        <button class="form-control text-start text-muted bg-light border-0" data-bs-toggle="modal" data-bs-target="#addPostModal" style="cursor:pointer;">
+          Announce something to your class...
+        </button>
+        <button class="btn btn-primary btn-sm text-nowrap" data-bs-toggle="modal" data-bs-target="#addPostModal">
+          <i class="bi bi-plus-lg me-1"></i>Add Post
+        </button>
+      </div>
+    </div>
+
+    @if (!Model.Posts.Any())
+    {
+      <div class="text-center text-muted py-5">
+        <i class="bi bi-megaphone display-4"></i>
+        <p class="mt-2">No posts yet. Add your first announcement.</p>
+      </div>
+    }
+    else
+    {
+      @foreach (var post in Model.Posts.OrderByDescending(p => p.PostedAt))
+      {
+        <div class="card shadow-sm mb-3 border-0" data-post-id="@post.PostId">
+          <div class="card-body">
+            <div class="d-flex align-items-start justify-content-between mb-2 gap-3">
+              <div class="d-flex align-items-center gap-2">
+                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
+                  <i class="bi bi-person-fill small"></i>
+                </div>
+                <div>
+                  <div class="fw-semibold small">@post.PostedByName</div>
+                  <div class="text-muted small">@post.PostedAt.ToString("dd MMM yyyy, hh:mm tt")</div>
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge rounded-pill bg-secondary text-white">@post.PostType</span>
+                <div class="dropdown">
+                  <button class="btn btn-sm btn-link text-muted p-0" data-bs-toggle="dropdown">
+                    <i class="bi bi-three-dots-vertical"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="#"><i class="bi bi-pencil me-2"></i>Edit</a></li>
+                    <li><a class="dropdown-item text-danger" href="#"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <h6 class="fw-bold mb-2">@post.Title</h6>
+            <div class="text-muted small mb-2">@post.Body</div>
+            @if (post.AttachedFileNames.Any())
+            {
+              <div class="mt-2 d-flex flex-wrap gap-1">
+                @foreach (var fileName in post.AttachedFileNames)
+                {
+                  <span class="badge bg-light text-dark border"><i class="bi bi-paperclip me-1"></i>@fileName</span>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+    }
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <div class="fw-semibold text-muted small mb-2">SECTION</div>
+        <div class="fw-bold fs-5">@Model.SectionName</div>
+        <div class="text-muted small">@Model.EnrolledCount students enrolled</div>
+      </div>
+    </div>
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="fw-semibold text-muted small mb-2">UPCOMING ASSESSMENTS</div>
+        @if (!Model.Assignments.Any(a => a.DueDate.HasValue && a.DueDate > DateTime.Now))
+        {
+          <div class="text-muted small">No upcoming assessments.</div>
+        }
+        else
+        {
+          @foreach (var assignment in Model.Assignments.Where(a => a.DueDate.HasValue && a.DueDate > DateTime.Now).Take(3))
+          {
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div class="text-truncate" style="max-width: 180px;">
+                @assignment.Title
+              </div>
+              <div class="text-muted small">@assignment.DueDate?.ToString("dd MMM")</div>
+            </div>
+          }
+        }
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,186 @@
+@model OmniFlex.Models.ViewModels.Instructor.InstructorClassroomViewModel
+
+@{
+    Layout = "_InstructorLayout";
+    ViewData["PageTitle"] = Model.CourseName;
+}
+
+<div class="classroom-header text-white rounded-3 mb-0 p-4"
+     style="background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%); min-height:160px;">
+  <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+    <div>
+      <h2 class="fw-bold mb-1">@Model.CourseName</h2>
+      <p class="mb-1 opacity-75">@Model.SectionName &middot; @Model.Semester</p>
+      <small class="opacity-50">@Model.OfferingId</small>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-light btn-sm">
+        <i class="bi bi-gear-fill me-1"></i>Course Settings
+      </button>
+    </div>
+  </div>
+</div>
+
+<ul class="nav nav-tabs border-bottom-0 px-3 bg-white shadow-sm mt-3" id="classroomTabs">
+  <li class="nav-item">
+    <a class="nav-link @(Model.ActiveTab == "stream" ? "active" : "")" href="@Url.Action("Classroom", new { id = Model.OfferingId, tab = "stream" })" data-tab="stream">Stream</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link @(Model.ActiveTab == "classwork" ? "active" : "")" href="@Url.Action("Classroom", new { id = Model.OfferingId, tab = "classwork" })" data-tab="classwork">Classwork</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link @(Model.ActiveTab == "people" ? "active" : "")" href="@Url.Action("Classroom", new { id = Model.OfferingId, tab = "people" })" data-tab="people">People</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link @(Model.ActiveTab == "grades" ? "active" : "")" href="@Url.Action("Classroom", new { id = Model.OfferingId, tab = "grades" })" data-tab="grades">Grades</a>
+  </li>
+</ul>
+
+<div id="classroomTabContent" class="mt-3" data-offering-id="@Model.OfferingId">
+    @await Html.PartialAsync(
+        Model.ActiveTab == "stream" ? "_InstructorStream" :
+        Model.ActiveTab == "classwork" ? "_InstructorClasswork" :
+        Model.ActiveTab == "people" ? "_InstructorPeople" :
+        "_InstructorGrades",
+        Model)
+</div>
+
+<div class="modal fade" id="addPostModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-megaphone me-2"></i>Add Post</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        @Html.AntiForgeryToken()
+        <input type="hidden" id="postOfferingId" value="@Model.OfferingId" />
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Post Type <span class="text-danger">*</span></label>
+          <select id="postType" class="form-select">
+            <option value="">— Select Type —</option>
+            <option value="ANNOUNCEMENT">Announcement</option>
+            <option value="MATERIAL">Material</option>
+            <option value="RESOURCE">Resource</option>
+            <option value="LINK">Link</option>
+            <option value="VIDEO">Video</option>
+            <option value="REFERENCE">Reference</option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+          <input type="text" id="postTitle" class="form-control" maxlength="100" />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Body <span class="text-danger">*</span></label>
+          <textarea id="postBody" class="form-control" rows="5"></textarea>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Attachments</label>
+          <div class="border rounded p-3 bg-light text-muted small text-center">
+            File attachments will be available in the next phase.
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="btnSubmitPost">Post</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="addAssessmentModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-clipboard-plus me-2"></i>Add Assessment</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        @Html.AntiForgeryToken()
+        <input type="hidden" id="assessmentOfferingId" value="@Model.OfferingId" />
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+            <input type="text" id="assessmentTitle" class="form-control" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Delivery Mode <span class="text-danger">*</span></label>
+            <select id="assessmentDeliveryMode" class="form-select">
+              <option value="">— Select Mode —</option>
+              <option value="Online">Online</option>
+              <option value="Onsite">Physical</option>
+            </select>
+          </div>
+          <div class="col-md-6" id="categoryWrapper">
+            <label class="form-label fw-semibold">Category</label>
+            <select id="assessmentCategorySelect" class="form-select d-none">
+              <option value="">— Select Category —</option>
+              <option value="Final">Final</option>
+              <option value="Mid I">Mid I</option>
+              <option value="Mid II">Mid II</option>
+              <option value="Quiz">Quiz</option>
+            </select>
+            <input type="text" id="assessmentCategoryText" class="form-control" placeholder="Type category" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Due Date</label>
+            <input type="datetime-local" id="assessmentDueDate" class="form-control" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Total Marks <span class="text-danger">*</span></label>
+            <input type="number" id="assessmentTotalMarks" class="form-control" min="1" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Weighted %</label>
+            <input type="number" id="assessmentActualWtg" class="form-control" min="0" max="100" step="0.5" value="0" />
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Description</label>
+            <textarea id="assessmentDescription" class="form-control" rows="4"></textarea>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Grading Group</label>
+            <input type="text" id="assessmentGradingGroup" class="form-control" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Count Best Of</label>
+            <input type="number" id="assessmentCountBestOf" class="form-control" min="1" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Is Graded?</label>
+            <select id="assessmentIsGraded" class="form-select">
+              <option value="Y">Yes</option>
+              <option value="N">No</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-success" id="btnSubmitAssessment">Add Assessment</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="assignmentDetailOffcanvas" style="width:55%;">
+  <div class="offcanvas-header border-bottom">
+    <h5 class="offcanvas-title">Assignment Detail</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body" id="assignmentDetailContent">
+    <div class="text-center py-5 text-muted">
+      <div class="spinner-border"></div>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+  <script src="~/js/Instructor-classroom.js" asp-append-version="true"></script>
+}

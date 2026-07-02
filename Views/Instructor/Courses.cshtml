@@ -1,0 +1,45 @@
+@model List<OmniFlex.Models.ViewModels.Instructor.InstructorCourseCard>
+
+<h3 class="mb-3">Courses</h3>
+<div class="row g-3">
+    @foreach (var course in Model)
+    {
+        <div class="col-12 col-md-6 col-xl-4">
+            <div class="card h-100 shadow-sm">
+                <div class="p-3 text-white" style="background-color:@course.BannerColorClass; min-height:110px;">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5 class="mb-1 text-white">@course.CourseCode</h5>
+                            <div class="text-white-75">@course.CourseName</div>
+                        </div>
+                        <span class="badge bg-white text-dark">@course.CourseType</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2 text-muted">@course.Section • Batch @course.Batch</p>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                       <div><strong>@course.CreditHours</strong> Credit Hrs </div>
+                       @{
+                        if(course.StudentsCount == 0)
+                        {
+                            <div><strong>0</strong> Students</div>
+                        }
+                        else if(course.StudentsCount == 1)
+                        {
+                            <div><strong>1</strong> Student</div>
+                        }
+                        else
+                        {
+                            <div><strong>@course.StudentsCount</strong> Students</div>
+                        }
+                       }
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a class="btn btn-sm btn-primary" asp-controller="Instructor" asp-action="Classroom" asp-route-offeringId="@course.OfferingId" asp-route-tab="stream">Open</a>
+                        <a class="btn btn-sm btn-outline-light" asp-controller="Instructor" asp-action="Classroom" asp-route-offeringId="@course.OfferingId" asp-route-tab="classwork">Classwork</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

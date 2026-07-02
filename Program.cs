@@ -21,8 +21,11 @@ builder.Services.AddScoped<OmniFlex.Models.Repositories.Admin.IAssignmentReposit
 builder.Services.AddScoped<OmniFlex.Models.Repositories.Admin.ISubmissionRepository, OmniFlex.Models.Repositories.Admin.SubmissionRepository>();
 builder.Services.AddScoped<OmniFlex.Models.Repositories.Admin.IAttendanceRepository, OmniFlex.Models.Repositories.Admin.AttendanceRepository>();
 builder.Services.AddScoped<OmniFlex.Models.Repositories.Admin.IResultRepository, OmniFlex.Models.Repositories.Admin.ResultRepository>();
+builder.Services.AddScoped<OmniFlex.Models.Repositories.Instructor.IInstructorRepository, OmniFlex.Models.Repositories.Instructor.InstructorRepository>();
 
-var app = builder.Build();
+try 
+{
+    var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
 {
@@ -38,7 +41,25 @@ app.UseSession();
 app.UseAuthorization();
 
 app.MapControllerRoute(
+    name: "studentCourseDetails",
+    pattern: "Student/Course/{courseId}/{tab?}",
+    defaults: new { controller = "Student", action = "CourseDetails" });
+
+app.MapControllerRoute(
+    name: "instructorClassroom",
+    pattern: "Instructor/Classroom/{offeringId}/{tab}",
+    defaults: new { controller = "Instructor", action = "Classroom", tab = "stream" });
+
+app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
+
+} 
+catch (Exception ex) 
+{
+    // Check ex.Message and ex.InnerException.Message
+    Console.WriteLine(ex.Message); 
+    throw;
+}

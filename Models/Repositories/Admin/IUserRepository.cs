@@ -1,11 +1,14 @@
-using OmniFlex.Models.Domain.Admin;  
-using OmniFlex.Models.DTOs;        
-
+using OmniFlex.Models.Domain.Admin;
+using OmniFlex.Models.DTOs;
+using OmniFlex.Models.ViewModels.Student;
 namespace OmniFlex.Models.Repositories.Admin
 {
     public interface IUserRepository
     {
         Task<User?> GetByIdAsync(string userId);
+        Task<User?> GetActiveLoginUserAsync(string userId);
+        Task<StudentDto?> GetDetailsByIdAsync(string userId);
+        Task<List<EnrolledCourseRow>> GetEnrolledCoursesAsync(string userId);
         Task<User?> GetByEmailAsync(string email);
         Task<IEnumerable<User>> GetAllAsync();
         Task<IEnumerable<User>> GetByRoleAsync(string role);

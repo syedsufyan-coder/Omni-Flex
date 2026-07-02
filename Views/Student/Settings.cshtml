@@ -1,0 +1,60 @@
+@{
+    ViewData["PageTitle"] = "Settings";
+}
+
+<div class="row g-3">
+    <div class="col-12">
+        <div class="card p-3">
+            <h5>Profile Settings</h5>
+            <form>
+                <div class="row g-2">
+                    <div class="col-md-4"><input class="form-control" placeholder="Full Name" value="Ahmed Raza" /></div>
+                    <div class="col-md-4"><input class="form-control" placeholder="Email" value="ahmed.raza@nu.edu.pk" /></div>
+                    <div class="col-md-4"><input class="form-control" placeholder="Mobile No" value="+92-300-1234567" /></div>
+                </div>
+                <button class="btn btn-primary mt-3">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card p-3">
+            <h5>Security</h5>
+            <form>
+                <div class="row g-2">
+                    <div class="col-md-4"><input type="password" class="form-control" placeholder="Current Password" /></div>
+                    <div class="col-md-4"><input type="password" class="form-control" placeholder="New Password" /></div>
+                    <div class="col-md-4"><input type="password" class="form-control" placeholder="Confirm Password" /></div>
+                </div>
+                <button class="btn btn-primary mt-3">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card p-3">
+            <h5>Notifications</h5>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="emailNotif" checked />
+                <label class="form-check-label" for="emailNotif">Email Notifications</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="smsNotif" checked />
+                <label class="form-check-label" for="smsNotif">SMS Notifications</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="portalAlerts" checked />
+                <label class="form-check-label" for="portalAlerts">Portal Alerts</label>
+            </div>
+            <button class="btn btn-primary mt-3">Save Changes</button>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card p-3">
+            <h5>Appearance</h5>
+            <p>Theme customization coming soon.</p>
+            <button class="btn btn-primary mt-2">Save Changes</button>
+        </div>
+    </div>
+</div>

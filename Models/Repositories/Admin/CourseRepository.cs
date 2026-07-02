@@ -116,7 +116,7 @@ namespace OmniFlex.Models.Repositories.Admin
                     JOIN SECTION_OFFERINGS SO  ON SO.COURSE_ID   = C.COURSE_ID
                     JOIN SEMESTERS SM          ON SM.SEMESTER_ID = SO.SEMESTER_ID
                     LEFT JOIN COURSES PRE      ON PRE.COURSE_ID  = C.PRE_REQ_ID
-                    WHERE SO.TEACHER_ID = :Teacher_id AND SM.IS_CURRENT = 1";
+                    WHERE SO.TEACHER_ID  = :Teacher_id AND SM.IS_CURRENT = 1";
 
             using var conn = _factory.CreateConnection();
             return await conn.QueryAsync<CourseDto>(sql, new { Teacher_id = teacherId });

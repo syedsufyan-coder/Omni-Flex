@@ -1,0 +1,104 @@
+@model OmniFlex.Models.ViewModels.Instructor.InstructorAttendanceViewModel
+
+<h3 class="mb-3">Manage Attendance</h3>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form class="row g-3" id="attendanceFilterForm" method="get" asp-action="ManageAttendance" asp-controller="Instructor">
+            <div class="col-sm-6 col-md-3">
+                <label class="form-label">Course</label>
+                <select class="form-select" id="selectedCourseId" name="selectedCourseId" asp-for="SelectedCourseId" asp-items="@(new SelectList(Model.CourseOptions, "Value", "Label"))"></select>
+            </div>
+            <div class="col-sm-6 col-md-3">
+                <label class="form-label">Section</label>
+                <select class="form-select" id="selectedSectionId" name="selectedSectionId" asp-for="SelectedSectionId" asp-items="@(new SelectList(Model.SectionOptions, "Value", "Label"))"></select>
+            </div>
+            <div class="col-sm-6 col-md-2">
+                <label class="form-label">Month</label>
+                <select class="form-select" name="selectedMonth" asp-for="SelectedMonth" asp-items="@(new SelectList(Model.MonthOptions, "Value", "Label"))"></select>
+            </div>
+            <div class="col-sm-6 col-md-2">
+                <label class="form-label">Duration</label>
+                <select class="form-select" id="selectedDuration" name="duration" asp-for="SelectedDuration" asp-items="@(new SelectList(Model.DurationOptions, "Value", "Label"))"></select>
+            </div>
+            <div class="col-sm-12 col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">Load Roster</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-0">Attendance Sheet</h5>
+            <small class="text-muted">Students in the selected section</small>
+        </div>
+        <button class="btn btn-sm btn-outline-primary" type="button" onclick="attendanceManager.addNewColumn()">Add Attendance</button>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered mb-0 align-middle" id="attendanceTable">
+                <thead class="table-light">
+                    <tr id="tableHeaderRow">
+                        <th>S.No.</th>
+                        <th>Roll No.</th>
+                        <th>Full Name</th>
+                    @if (Model.Students.Any())
+                    {
+                        var firstStudent = Model.Students.First();
+                        foreach (var record in firstStudent.Attendances)
+                        {
+                            <th>@record.Date.ToString("dd-MMM")</th>
+                        }
+                    }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var student in Model.Students)
+                    {
+                        <tr data-enroll-id="@student.EnrollId">
+                            <td>@student.SNo</td>
+                            <td>@student.RollNo</td>
+                            <td>@student.FullName</td>
+                            
+                            @foreach (var record in student.Attendances)
+                            {
+                                <td class="attendance-cell text-center">
+                                    <div class="d-flex align-items-center justify-content-center gap-1">
+                                        <select class="status-select" data-aid="@record.AttendanceId" onchange="attendanceManager.showSaveIcon(this)">
+                                            <option value="P" selected='@(record.Status == "P")'>P</option>
+                                            <option value="A" selected='@(record.Status == "A")'>A</option>
+                                            <option value="L" selected='@(record.Status == "L")'>L</option>
+                                        </select>
+                                        <button class="btn btn-sm btn-link p-0 save-btn d-none" onclick="attendanceManager.saveStatus(this)">
+                                            <i class="bi bi-check-circle-fill text-success"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/attendance-manager.js"></script>
+}
+
+<style>
+    .status-select {
+        border: none;
+        background: transparent;
+        font-weight: bold;
+        width: 35px;
+        text-align: center;
+        appearance: none;
+        cursor: pointer;
+    }
+    .status-select:focus { outline: 1px solid #0d6efd; border-radius: 4px; }
+    .save-btn i { font-size: 1.1rem; }
+</style>

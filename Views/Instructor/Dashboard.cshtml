@@ -1,0 +1,142 @@
+@model OmniFlex.Models.ViewModels.Instructor.InstructorDashboardViewModel
+
+<h3 class="mb-3">@Model.GreetingMessage, @Model.Profile.FullName</h3>
+<div class="row gy-3 mb-4">
+    <div class="col-12 col-md-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <small class="text-uppercase text-muted">Assigned classes</small>
+                <h4 class="mt-2">@Model.AssignedClasses.Count</h4>
+                <p class="mb-0 text-muted">Active sections currently assigned</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <small class="text-uppercase text-muted">Active courses</small>
+                @{
+                    var uniqueCourses = Model.Courses?.DistinctBy(c => c.CourseCode).ToList() ?? new List<OmniFlex.Models.ViewModels.Instructor.InstructorCourseCard>();
+                    int courseCount = uniqueCourses.Count;
+                }
+                <h4 class="mt-2">@courseCount</h4>
+                <p class="mb-0 text-muted">Teaching load for this semester</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <small class="text-uppercase text-muted">Quizzes</small>
+                <h4 class="mt-2">@Model.WeeklySummary.QuizzesCompleted Completed</h4>
+                <p class="mb-0 text-muted">@Model.WeeklySummary.QuizzesPending Pending</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <small class="text-uppercase text-muted">Finals</small>
+                <h4 class="mt-2">@Model.WeeklySummary.FinalsCompleted Completed</h4>
+                <p class="mb-0 text-muted">@Model.WeeklySummary.FinalsPending Pending</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-primary text-white">
+                University Information
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-5">Instructor ID</dt><dd class="col-7">@Model.Profile.InstructorId</dd>
+                    <dt class="col-5">Designation</dt><dd class="col-7">@Model.Profile.Designation</dd>
+                    <dt class="col-5">Office Room</dt><dd class="col-7">@Model.Profile.OfficeRoom</dd>
+                    <dt class="col-5">Specialization</dt><dd class="col-7">@Model.Profile.Specialization</dd>
+                    <dt class="col-5">Status</dt><dd class="col-7">@Model.Profile.Status</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-secondary text-white">
+                Personal Information
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-5">Name</dt><dd class="col-7">@Model.Profile.FullName</dd>
+                    <dt class="col-5">Gender</dt><dd class="col-7">@Model.Profile.Gender</dd>
+                    <dt class="col-5">Email</dt><dd class="col-7">@Model.Profile.Email</dd>
+                    <dt class="col-5">DOB</dt><dd class="col-7">@Model.Profile.DOB</dd>
+                    <dt class="col-5">Mobile No</dt><dd class="col-7">@Model.Profile.MobileNo</dd>
+                    <dt class="col-5">Blood Group</dt><dd class="col-7">@Model.Profile.BloodGroup</dd>
+                    <dt class="col-5">Nationality</dt><dd class="col-7">@Model.Profile.Nationality</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-dark text-white">
+                Contact Information
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-5">Address</dt><dd class="col-7">@Model.Profile.Address</dd>
+                    <dt class="col-5">Home Phone</dt><dd class="col-7">@Model.Profile.HomePhone</dd>
+                    <dt class="col-5">Postal Code</dt><dd class="col-7">@Model.Profile.PostalCode</dd>
+                    <dt class="col-5">City</dt><dd class="col-7">@Model.Profile.City</dd>
+                    <dt class="col-5">Country</dt><dd class="col-7">@Model.Profile.Country</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-0">Assigned Classes</h5>
+            <small class="text-muted">Overview of each section assigned to you</small>
+        </div>
+        <span class="badge bg-info">Week @Model.WeeklySummary.CurrentWeek</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Course Code</th>
+                        <th>Course Name</th>
+                        <th>Section</th>
+                        <th>Credit Hours</th>
+                        <th>Type</th>
+                        <th>Students</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in Model.AssignedClasses)
+                {
+                    int index = Model.AssignedClasses.IndexOf(item) + 1;
+                    <tr>
+                        <td>@index</td>
+                        <td>@item.CourseCode</td>
+                        <td>@item.CourseName</td>
+                        <td>@item.Section</td>
+                        <td>@item.CreditHrs</td>
+                        <td>@item.CourseType</td>
+                        <td>@item.EnrolledStudents</td>
+                        <td><span class="badge bg-success">@item.Status</span></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,91 @@
+@model OmniFlex.Models.ViewModels.Student.DashboardViewModel
+
+@{
+    ViewData["PageTitle"] = "Dashboard";
+}
+
+<div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h4 class="mb-1">@Model.GreetingMessage, @Model.StudentName</h4>
+            <small class="text-muted">@Model.CurrentDateTime.ToString("dddd, dd MMMM yyyy HH:mm")</small>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-4">
+        <div class="card p-3 h-100">
+            <h6>University Information</h6>
+            <dl class="row">
+                <dt class="col-5">Roll No</dt><dd class="col-7">@Model.RollNo</dd>
+                <dt class="col-5">Section</dt><dd class="col-7">@Model.Section</dd>
+                <dt class="col-5">Degree</dt><dd class="col-7">@Model.Degree</dd>
+                <dt class="col-5">Batch</dt><dd class="col-7">@Model.Batch</dd>
+                <dt class="col-5">Status</dt><dd class="col-7">@Model.Status</dd>
+            </dl>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card p-3 h-100">
+            <h6>Personal Information</h6>
+            <dl class="row">
+                <dt class="col-5">Full Name</dt><dd class="col-7">@Model.FullName</dd>
+                <dt class="col-5">Gender</dt><dd class="col-7">@Model.Gender</dd>
+                <dt class="col-5">Email</dt><dd class="col-7">@Model.Email</dd>
+                <dt class="col-5">Date of Birth</dt><dd class="col-7">@Model.DateOfBirth</dd>
+                <dt class="col-5">Mobile No</dt><dd class="col-7">@Model.MobileNo</dd>
+                <dt class="col-5">Blood Group</dt><dd class="col-7">@Model.BloodGroup</dd>
+                <dt class="col-5">Nationality</dt><dd class="col-7">@Model.Nationality</dd>
+            </dl>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card p-3 h-100">
+            <h6>Contact Information</h6>
+            <dl class="row">
+                <dt class="col-5">Address</dt><dd class="col-7">@Model.Address</dd>
+                <dt class="col-5">Home Phone</dt><dd class="col-7">@Model.HomePhone</dd>
+                <dt class="col-5">Postal Code</dt><dd class="col-7">@Model.PostalCode</dd>
+                <dt class="col-5">City</dt><dd class="col-7">@Model.City</dd>
+                <dt class="col-5">Country</dt><dd class="col-7">@Model.Country</dd>
+            </dl>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        Enrolled Classes
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Code</th>
+                        <th>Course Name</th>
+                        <th>Section</th>
+                        <th>Cr. Hrs</th>
+                        <th>Type</th>
+                        <th>Attendance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in Model.EnrolledCourses ?? new List<OmniFlex.Models.ViewModels.Student.EnrolledCourseRow>())
+                    {
+                        var badgeClass = c.AttendancePercentage >= 75 ? "badge bg-success" : c.AttendancePercentage >= 60 ? "badge bg-warning text-dark" : "badge bg-danger";
+                        <tr>
+                            <td>@c.CourseCode</td>
+                            <td>@c.CourseName</td>
+                            <td>@c.SectionLabel</td>
+                            <td>@c.CreditHours</td>
+                            <td>@c.Category</td>
+                            <td><span class="@badgeClass">@c.AttendancePercentage.ToString("0.0")%</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
