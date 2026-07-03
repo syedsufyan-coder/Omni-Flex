@@ -16,11 +16,7 @@
             <div class="card-body">
                 <small class="text-uppercase text-muted">Active courses</small>
                 @{
-                    if(Model.Courses == null)
-                    {
-                        <h4 class="mt-2">0</h4>
-                    }
-                    var uniqueCourses = Model.Courses.DistinctBy(c => c.CourseCode).ToList();
+                    var uniqueCourses = Model.Courses?.DistinctBy(c => c.CourseCode).ToList() ?? new List<OmniFlex.Models.ViewModels.Instructor.InstructorCourseCard>();
                     int courseCount = uniqueCourses.Count;
                 }
                 <h4 class="mt-2">@courseCount</h4>

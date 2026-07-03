@@ -17,5 +17,7 @@ namespace OmniFlex.Models.Repositories.Admin
         Task<int> TransferAsync(int enrollId, string newSectionId);
         Task<int> UpdateStatusAsync(int enrollId, string status);
         Task<bool> IsEnrolledAsync(string studentId, string sectionId);
+        Task<Enrollment?> GetRecordAsync(string studentId, string courseId);
     }
+
 }

@@ -5,13 +5,9 @@ using BCrypt.Net;
 
 namespace OmniFlex.Controllers
 {
-    public class AuthController : Controller
+    public class AuthController(IUserRepository users) : Controller
     {
-        private readonly IUserRepository _users;
-
-        public AuthController(IUserRepository users)
-            => _users = users;
-
+        private readonly IUserRepository _users = users;
         [HttpGet]
         [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
         public IActionResult Login(string role = "student")
@@ -33,7 +29,7 @@ namespace OmniFlex.Controllers
             For Development: Passwords are stored in plain text for easy testing. In production, use hashed passwords and verify using BCrypt.
             if (user == null || !BCrypt.Net.BCrypt.Verify(model.Password, user.PasswordHash))
             {
-                ModelState.AddModelError("", "Invalid ID or password.");
+                ModelState.AddModelError("", "Invalid ID or password");
                 return View(model);
             }*/
 
@@ -48,7 +44,6 @@ namespace OmniFlex.Controllers
                 ModelState.AddModelError("", "Invalid ID or password.");
                 return View(model);
             }
-
             // Store in session
             HttpContext.Session.SetString("UserId",   user.UserId);
             HttpContext.Session.SetString("UserName", user.FirstName + " " + user.LastName);
@@ -63,7 +58,6 @@ namespace OmniFlex.Controllers
                 _             => RedirectToAction("Index", "Home")
             };
         }
-
         public IActionResult Logout()
         {
             HttpContext.Session.Clear();

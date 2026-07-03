@@ -20,7 +20,9 @@ namespace OmniFlex.Models.Services
 
             if (semester < 1) semester = 1;
 
-            return $"{degree}-{semester}{label}"; // Result: BSCS-3A
+            // BSCS-44G Error, This avoids duplication like BSCS-44G (semester=4, label=4G)
+            string letterOnly = new string(label.Where(char.IsLetter).ToArray());
+            return $"{degree}-{semester}{letterOnly}"; // Result: BSCS-3A
         }
     }
 }
