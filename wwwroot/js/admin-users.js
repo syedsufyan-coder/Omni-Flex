@@ -4,38 +4,88 @@ document.addEventListener("DOMContentLoaded", function () {
   // User Search
   const searchInput = document.getElementById("userSearch");
   const tbody = document.querySelector("#usersTable tbody");
+  const roleFilter = document.getElementById("roleFilter");
+  const userCountSummary = document.getElementById("userCountSummary");
+  const serverPagination = document.getElementById("serverPagination");
+  const originalSummaryText = userCountSummary
+    ? userCountSummary.textContent
+    : "";
+
+  function updateUserListState() {
+    if (!tbody) return;
+    const visibleRows = Array.from(
+      tbody.querySelectorAll("tr[data-user-id]"),
+    ).filter((row) => row.style.display !== "none");
+
+    visibleRows.forEach((row, index) => {
+      const firstCell = row.querySelector("td");
+      if (firstCell) firstCell.textContent = index + 1;
+    });
+
+    const filterActive = searchInput && searchInput.value.trim() !== "";
+
+    if (serverPagination) {
+      serverPagination.style.display = filterActive ? "none" : "";
+    }
+
+    if (userCountSummary) {
+      const totalItems = userCountSummary.dataset.totalItems || "0";
+      if (filterActive) {
+        userCountSummary.textContent = `Showing ${visibleRows.length} of ${totalItems} users`;
+      } else {
+        userCountSummary.textContent = originalSummaryText;
+      }
+    }
+  }
 
   if (searchInput && tbody) {
     searchInput.addEventListener("input", function () {
       const q = this.value.toLowerCase();
       tbody.querySelectorAll("tr").forEach((row) => {
+        if (!row.hasAttribute("data-user-id")) return;
         row.style.display = row.textContent.toLowerCase().includes(q)
           ? ""
           : "none";
       });
-    });
-  }
-
-  // Role filter
-  const roleFilter = document.getElementById("roleFilter");
-  if (roleFilter) {
-    roleFilter.addEventListener("change", function () {
-      const role = this.value.toLowerCase();
-      tbody.querySelectorAll("tr").forEach((row) => {
-        const rowRole = (row.getAttribute("data-role") || "").toLowerCase();
-        row.style.display = !role || rowRole === role ? "" : "none";
-      });
+      updateUserListState();
     });
   }
 });
 
+function filterByRole() {
+  const roleFilter = document.getElementById("roleFilter");
+  if (!roleFilter) return;
+
+  const action = roleFilter.value;
+  if (!action) return;
+
+  window.location.href = `/Admin/${action}`;
+}
+
 // Clear filters
 function clearFilters() {
-  document.getElementById("userSearch").value = "";
-  document.getElementById("roleFilter").value = "";
+  const roleFilter = document.getElementById("roleFilter");
+  const userSearch = document.getElementById("userSearch");
+
+  if (roleFilter) {
+    roleFilter.value = "Users";
+  }
+  if (userSearch) {
+    userSearch.value = "";
+  }
+
+  const currentPath = window.location.pathname.toLowerCase();
+  if (!currentPath.endsWith("/users")) {
+    window.location.href = "/Admin/Users";
+    return;
+  }
+
   document
     .querySelectorAll("#usersTable tbody tr")
     .forEach((r) => (r.style.display = ""));
+  if (typeof updateUserListState === "function") {
+    updateUserListState();
+  }
 }
 
 //  Add User

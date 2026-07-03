@@ -164,6 +164,46 @@ function filterCourses() {
 
       if (response.success) {
         renderFilteredCourses(response.data);
+        // Update the total count shown in the header to reflect filtered results
+        try {
+          var totalSpan = document.querySelector(
+            "div.d-flex.justify-content-between h4 .text-muted",
+          );
+          var uniqueCourses = response.data.length;
+          var totalAssigned = 0;
+          response.data.forEach(function (c) {
+            if (c.assignedSections)
+              totalAssigned += parseInt(c.assignedSections);
+          });
+          if (totalSpan) {
+            if (totalAssigned && totalAssigned !== uniqueCourses) {
+              totalSpan.textContent = `(${uniqueCourses} unique / ${totalAssigned} assigned)`;
+            } else {
+              totalSpan.textContent = `(${uniqueCourses} total)`;
+            }
+          }
+
+          // Hide server-side pagination when showing filtered results
+          var paginationNav = document.querySelector(
+            "nav[aria-label='Courses pagination']",
+          );
+          if (paginationNav) paginationNav.style.display = "none";
+
+          // Update the small summary line under pagination
+          var showingDiv = document.querySelector(
+            ".text-center.text-muted.small",
+          );
+          if (showingDiv) {
+            if (totalAssigned && totalAssigned !== uniqueCourses) {
+              showingDiv.textContent = `Showing ${uniqueCourses} unique courses (${totalAssigned} assigned across sections) (Page 1 of 1)`;
+            } else {
+              showingDiv.textContent = `Showing ${uniqueCourses} of ${uniqueCourses} courses (Page 1 of 1)`;
+            }
+          }
+        } catch (e) {
+          // Swallow any UI update errors so filtering still works
+          console.warn("Error updating pagination UI after filtering", e);
+        }
       } else {
         showFilterError(response.message);
       }
@@ -172,7 +212,24 @@ function filterCourses() {
     error: function () {
       btn.disabled = false;
       btn.innerHTML = '<i class="bi bi-search me-1"></i>Search';
-      showFilterError("Ops ! Something Went Wrong. Please Try Again.");
+      // Show detailed error to help debugging (temporary)
+      try {
+        var args = arguments; // xhr, status, error
+        var xhr = args[0];
+        var status = args[1];
+        var err = args[2];
+        console.error("FilterCourses AJAX error", xhr, status, err);
+        var respText =
+          xhr && xhr.responseText ? xhr.responseText : err || "Network error";
+        // Try to parse JSON message if present
+        try {
+          var j = JSON.parse(respText);
+          if (j && j.message) respText = j.message;
+        } catch (e) {}
+        showFilterError("Error " + (xhr.status || "") + ": " + respText);
+      } catch (e) {
+        showFilterError("Ops ! Something Went Wrong. Please Try Again.");
+      }
     },
   });
 }
@@ -196,6 +253,11 @@ function renderFilteredCourses(courses) {
   // Build HTML rows from the courses array
   var html = "";
   $.each(courses, function (index, course) {
+    var sectionBadge = "";
+    if (course.assignedSections && parseInt(course.assignedSections) > 1) {
+      sectionBadge = ` <span class="badge bg-secondary ms-1">Sections: ${course.assignedSections}</span>`;
+    }
+
     html +=
       "<tr>" +
       "<td>" +
@@ -203,6 +265,7 @@ function renderFilteredCourses(courses) {
       "</td>" +
       "<td>" +
       course.courseId +
+      sectionBadge +
       "</td>" +
       "<td>" +
       course.courseName +
@@ -371,10 +434,114 @@ function viewCourse(courseId) {
                         <p class="fw-semibold" id="viewCourseInstructors">Loading...</p>
                     </div>
                 </div>`;
+      loadCourseAssignedInstructors(courseId);
     },
     error: function () {
       document.getElementById("viewCourseBody").innerHTML =
         `<div class="alert alert-danger">Failed to load course details.</div>`;
+    },
+  });
+}
+
+function loadCourseAssignedInstructors(courseId) {
+  const target = document.getElementById("viewCourseInstructors");
+  if (target) {
+    target.textContent = "Loading...";
+  }
+
+  $.ajax({
+    url: "/Admin/GetSectionsByCourse",
+    type: "GET",
+    data: { courseId: courseId },
+    success: function (res) {
+      if (!res.success) {
+        if (target) {
+          target.textContent = "Unable to load assigned instructors.";
+        }
+        return;
+      }
+
+      const sections = res.data || [];
+      const uniqueInstructorNames = [];
+      const seenIds = {};
+
+      sections.forEach(function (section) {
+        if (section.instructorId && !seenIds[section.instructorId]) {
+          seenIds[section.instructorId] = true;
+          uniqueInstructorNames.push(
+            section.instructorName || section.instructorId,
+          );
+        }
+      });
+
+      if (target) {
+        if (uniqueInstructorNames.length === 0) {
+          target.textContent = "No instructors assigned yet.";
+        } else {
+          target.textContent = uniqueInstructorNames.join(", ");
+        }
+      }
+    },
+    error: function () {
+      if (target) {
+        target.textContent = "Unable to load assigned instructors.";
+      }
+    },
+  });
+}
+
+function loadAssignCourseInstructors(courseId) {
+  const container = document.getElementById("currentInstructors");
+  if (container) {
+    container.innerHTML = '<p class="text-muted small">Loading...</p>';
+  }
+
+  $.ajax({
+    url: "/Admin/GetSectionsByCourse",
+    type: "GET",
+    data: { courseId: courseId },
+    success: function (res) {
+      if (!res.success) {
+        if (container) {
+          container.innerHTML =
+            '<p class="text-muted small">Unable to load assigned instructors.</p>';
+        }
+        return;
+      }
+
+      const sections = res.data || [];
+      const uniqueInstructorNames = [];
+      const seenIds = {};
+
+      sections.forEach(function (section) {
+        if (section.instructorId && !seenIds[section.instructorId]) {
+          seenIds[section.instructorId] = true;
+          uniqueInstructorNames.push(
+            section.instructorName || section.instructorId,
+          );
+        }
+      });
+
+      if (container) {
+        if (uniqueInstructorNames.length === 0) {
+          container.innerHTML =
+            '<p class="text-muted small">No instructors assigned to this course yet.</p>';
+        } else {
+          container.innerHTML =
+            '<p class="fw-semibold mb-2">Currently Assigned Instructor' +
+            (uniqueInstructorNames.length > 1 ? "s" : "") +
+            "</p>" +
+            '<p class="mb-0">' +
+            uniqueInstructorNames.join(", ") +
+            "</p>";
+        }
+      }
+    },
+    error: function () {
+      if (container) {
+        container.innerHTML =
+          '<p class="text-muted small">Unable to load assigned instructors.</p>';
+      }
     },
   });
 }
@@ -426,10 +593,7 @@ function openAssignInstructorModal(courseId) {
     },
   });
 
-  // Get currently assigned instructors (placeholder - will be implemented with section data)
-  document.getElementById("currentInstructors").innerHTML =
-    '<p class="text-muted small">No instructors assigned to this course yet.</p>';
-
+  loadAssignCourseInstructors(courseId);
   openModal("assignInstructorModal");
 }
 

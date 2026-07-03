@@ -18,11 +18,45 @@
                 <span class="input-group-text"><i class="bi bi-search"></i></span>
                 <input id="userSearch" class="form-control" placeholder="Search users by name or email..." />
             </div>
+            @{
+                var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "Users";
+            }
             <select id="roleFilter" class="form-select" style="width:180px;" onchange="filterByRole()">
-                <option value="">All Roles</option>
-                <option value="Admin">Admin</option>
-                <option value="Instructor">Instructor</option>
-                <option value="Student">Student</option>
+                @if (currentAction == "Users")
+                {
+                    <option value="Users" selected>All Roles</option>
+                }
+                else
+                {
+                    <option value="Users">All Roles</option>
+                }
+
+                @if (currentAction == "Admins")
+                {
+                    <option value="Admins" selected>Admin</option>
+                }
+                else
+                {
+                    <option value="Admins">Admin</option>
+                }
+
+                @if (currentAction == "Instructors")
+                {
+                    <option value="Instructors" selected>Instructor</option>
+                }
+                else
+                {
+                    <option value="Instructors">Instructor</option>
+                }
+
+                @if (currentAction == "Students")
+                {
+                    <option value="Students" selected>Student</option>
+                }
+                else
+                {
+                    <option value="Students">Student</option>
+                }
             </select>
             <button class="btn btn-outline-secondary" onclick="clearFilters()">
                 <i class="bi bi-x-circle me-1"></i>Clear Filters
@@ -128,7 +162,7 @@
             var routeData = ViewContext.RouteData.Values;
             var actionName = routeData["action"]?.ToString() ?? "Users";
             
-            <nav aria-label="Users pagination">
+            <nav id="serverPagination" aria-label="Users pagination">
                 <ul class="pagination justify-content-center">
                     <li class="page-item @(Model.HasPrevious ? "" : "disabled")">
                         <a class="page-link" href="@Url.Action(actionName, new { page = Model.CurrentPage - 1 })">
@@ -148,7 +182,7 @@
                     </li>
                 </ul>
             </nav>
-            <div class="text-center text-muted small">
+            <div id="userCountSummary" class="text-center text-muted small" data-total-items="@Model.TotalItems">
                 Showing @Model!.Items!.Count of @Model!.TotalItems users (Page @Model!.CurrentPage of @Model!.TotalPages)
             </div>
         }

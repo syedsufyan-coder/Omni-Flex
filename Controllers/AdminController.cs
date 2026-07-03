@@ -241,6 +241,42 @@ namespace OmniFlex.Controllers
             }
         }
 
+        public async Task<IActionResult> Admins(int page = 1)
+        {
+            try
+            {
+                const int pageSize = 15;
+                var users = await _users.GetByRoleAsync("Admin");
+                var allViewModels = AdminController.BuildUserViewModels(users);
+
+                // Apply pagination
+                var totalItems = allViewModels.Count;
+                var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+                var paginatedUsers = allViewModels
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+
+                var paginationViewModel = new PaginationViewModel<UserViewModel>
+                {
+                    Items = paginatedUsers,
+                    CurrentPage = page,
+                    TotalPages = totalPages,
+                    TotalItems = totalItems,
+                    ItemsPerPage = pageSize
+                };
+
+                ViewData["PageTitle"] = "Admins";
+                return View("Users", paginationViewModel);
+            }
+            catch (Exception ex)
+            {
+                ViewData["PageTitle"] = "Admins";
+                ViewData["ErrorMessage"] = $"Error: {ex.Message} | Inner: {ex.InnerException?.Message}";
+                return View("Users", new PaginationViewModel<UserViewModel>());
+            }
+        }
+
         public async Task<IActionResult> TAs(int page = 1)
         {
             try
@@ -282,7 +318,7 @@ namespace OmniFlex.Controllers
         {
             try
             {
-                const int pageSize = 15;
+                const int pageSize = 10;
                 var users = await _users.GetByRoleAsync("Student");
                 var allViewModels = AdminController.BuildUserViewModels(users);
 
@@ -442,7 +478,39 @@ namespace OmniFlex.Controllers
 
                 if (!string.IsNullOrWhiteSpace(filter.TeacherId))
                 {
-                    result = await _courses.GetByTeacherWithDetailsAsync(filter.TeacherId);
+                    // Return courses along with how many sections this instructor is assigned to for each course
+                    using var conn = _factory.CreateConnection();
+                    const string sql = @"
+                    SELECT
+                        C.COURSE_ID   AS CourseId,
+                        C.COURSE_NAME AS CourseName,
+                        C.CREDIT_HRS  AS CreditHours,
+                        C.COURSE_TYPE AS CourseType,
+                        C.COURSE_CAT  AS CourseCat,
+                        NVL(PRE.COURSE_NAME, 'None') AS PreRequisite,
+                        COUNT(SO.SECTION_ID) AS AssignedSections
+                    FROM COURSES C
+                    JOIN SECTION_OFFERINGS SO  ON SO.COURSE_ID   = C.COURSE_ID
+                    JOIN SEMESTERS SM          ON SM.SEMESTER_ID = SO.SEMESTER_ID
+                    LEFT JOIN COURSES PRE      ON PRE.COURSE_ID  = C.PRE_REQ_ID
+                    WHERE SO.TEACHER_ID = :Teacher_id AND SM.IS_CURRENT = 1
+                    GROUP BY C.COURSE_ID, C.COURSE_NAME, C.CREDIT_HRS, C.COURSE_TYPE, C.COURSE_CAT, PRE.COURSE_NAME
+                    ORDER BY C.COURSE_ID";
+
+                    var rows = await conn.QueryAsync(sql, new { Teacher_id = filter.TeacherId });
+                    // Since CourseDto does not have AssignedSections, return anonymous objects instead to include count
+                    var resultWithCounts = rows.Select(r => new
+                    {
+                        courseId = r.COURSEID == null ? string.Empty : r.COURSEID.ToString(),
+                        courseName = r.COURSENAME == null ? string.Empty : r.COURSENAME.ToString(),
+                        creditHours = r.CREDITHRS == null ? 0 : Convert.ToInt32(r.CREDITHRS),
+                        courseType = r.COURSETYPE == null ? string.Empty : r.COURSETYPE.ToString(),
+                        courseCat = r.COURSECAT == null ? string.Empty : r.COURSECAT.ToString(),
+                        preRequisite = r.PREREQUISITE == null ? string.Empty : r.PREREQUISITE.ToString(),
+                        assignedSections = r.ASSIGNEDSECTIONS == null ? 0 : Convert.ToInt32(r.ASSIGNEDSECTIONS)
+                    }).AsEnumerable();
+
+                    return Json(new { success = true, data = resultWithCounts });
                 }
                 else if (!string.IsNullOrWhiteSpace(filter.DeptId))
                 {
