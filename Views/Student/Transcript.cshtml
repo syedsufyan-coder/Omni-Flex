@@ -40,7 +40,7 @@
 
         <div class="p-3">
 
-            @foreach (var s in Model.Semesters)
+            @foreach (var s in Model.Semesters ?? new List<OmniFlex.Models.ViewModels.Student.SemesterSection>())
             {
                 var cgpaColor = s.CGPA >= 3.0m ? "text-success" :
                                 s.CGPA >= 2.0m ? "text-warning" : "text-danger";

@@ -50,6 +50,16 @@ namespace OmniFlex.Controllers
         private IActionResult RedirectToLogin()
             => RedirectToAction("Login", "Auth", new { role = "student" });
 
+        public IActionResult Index()
+        {
+            var userId = GetCurrentUserId();
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return RedirectToLogin();
+            }
+            return RedirectToAction("Dashboard");
+        }
+
         public class AddPostCommentRequest
         {
             public long PostId { get; set; }

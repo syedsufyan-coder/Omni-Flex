@@ -18,23 +18,27 @@ namespace OmniFlex.Models.Repositories.Admin
         private const string SELECT_COLUMNS = @"
             RESULT_ID        AS ResultId,
             STUDENT_ID       AS StudentId,
-            SECTION_ID       AS SectionId,
+            ''               AS SectionId,
+            OFFERING_ID      AS OfferingId,
             FINAL_GRADE      AS FinalGrade,
             FINAL_PERCENTAGE AS FinalPercentage";
 
         public async Task<Result?> GetByStudentAndSectionAsync(string studentId, string sectionId)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.QueryFirstOrDefaultAsync<Result>(
-                $"SELECT {SELECT_COLUMNS} FROM RESULTS WHERE STUDENT_ID = :StudentId AND SECTION_ID = :SectionId",
+                $@"SELECT {SELECT_COLUMNS} FROM RESULTS 
+                   WHERE STUDENT_ID = :StudentId AND OFFERING_ID IN (
+                       SELECT OFFERING_ID FROM SECTION_OFFERINGS WHERE SECTION_ID = :SectionId
+                   )",
                 new { StudentId = studentId, SectionId = sectionId });
         }
 
         public async Task<IEnumerable<Result>> GetByStudentAsync(string studentId)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.QueryAsync<Result>(
                 $"SELECT {SELECT_COLUMNS} FROM RESULTS WHERE STUDENT_ID = :StudentId",
                 new { StudentId = studentId });
@@ -43,9 +47,12 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<IEnumerable<Result>> GetBySectionAsync(string sectionId)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.QueryAsync<Result>(
-                $"SELECT {SELECT_COLUMNS} FROM RESULTS WHERE SECTION_ID = :SectionId",
+                $@"SELECT {SELECT_COLUMNS} FROM RESULTS 
+                   WHERE OFFERING_ID IN (
+                       SELECT OFFERING_ID FROM SECTION_OFFERINGS WHERE SECTION_ID = :SectionId
+                   )",
                 new { SectionId = sectionId });
         }
 
@@ -175,7 +182,7 @@ namespace OmniFlex.Models.Repositories.Admin
             var rawData = await conn.QueryAsync<dynamic>(CoursesSql, new { student_id = studentId });
             var semesterSummaries = await conn.QueryAsync<dynamic>(MetadataSql, new { student_id = studentId });
             var Headerdata = await GetTranscriptHeaderData(studentId);
-            if (Headerdata == null && semesterSummaries == null)
+            if (Headerdata == null)
             {
                 throw new Exception($"No header data found for student ID: {studentId}");
             }
@@ -236,19 +243,21 @@ namespace OmniFlex.Models.Repositories.Admin
         public async Task<int> SaveResultAsync(Result result)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.ExecuteAsync(@"
-                INSERT INTO RESULTS (STUDENT_ID, SECTION_ID, FINAL_GRADE, FINAL_PERCENTAGE)
-                VALUES (:StudentId, :SectionId, :FinalGrade, :FinalPercentage)", result);
+                INSERT INTO RESULTS (STUDENT_ID, OFFERING_ID, FINAL_GRADE)
+                VALUES (:StudentId, :OfferingId, :FinalGrade)", result);
         }
 
         public async Task<int> UpdateGradeAsync(string studentId, string sectionId, string grade, decimal percentage)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+            
             return await conn.ExecuteAsync(@"
                 UPDATE RESULTS SET FINAL_GRADE = :Grade, FINAL_PERCENTAGE = :Percentage
-                WHERE STUDENT_ID = :StudentId AND SECTION_ID = :SectionId",
+                WHERE STUDENT_ID = :StudentId AND OFFERING_ID IN (
+                    SELECT OFFERING_ID FROM SECTION_OFFERINGS WHERE SECTION_ID = :SectionId
+                )",
                 new { StudentId = studentId, SectionId = sectionId, Grade = grade, Percentage = percentage });
         }
     }

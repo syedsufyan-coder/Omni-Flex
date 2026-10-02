@@ -135,7 +135,7 @@ namespace OmniFlex.Models.Repositories.Instructor
                 c.IS_ACTIVE";
 
             using var conn = _factory.CreateConnection();
-            conn.Open();
+
             var result = await conn.QueryAsync<AssignedClassesDTO>(sql, new { InstructorId = instructorId });
             return result ?? new List<AssignedClassesDTO>();
         }
@@ -184,7 +184,7 @@ namespace OmniFlex.Models.Repositories.Instructor
                     ORDER BY C.COURSE_NAME";
 
             using var conn = _factory.CreateConnection();
-            conn.Open();
+
             var result = await conn.QueryAsync<InstructorCourseCard>(sql, new { TeacherId = instructorId });
             return result.ToList();
         }
@@ -324,7 +324,7 @@ namespace OmniFlex.Models.Repositories.Instructor
                         ) GROUP BY ASSIGNMENT_ID";
 
             using var conn = _factory.CreateConnection();
-            conn.Open();
+
             var classroomInfo = await conn.QueryFirstOrDefaultAsync<InstructorClassroomViewModel>(sql_classroom, new { OfferingId = offeringId });
             if (classroomInfo == null)
             {
@@ -401,7 +401,7 @@ namespace OmniFlex.Models.Repositories.Instructor
                     WHERE SO.OFFERING_ID = :Offering_ID";
 
             using var conn = _factory.CreateConnection();
-            conn.Open();
+
             var teacher = await conn.QueryFirstOrDefaultAsync<InstructorPeopleViewModel>(sql_teacher, new { Offering_ID = offeringId });
             var students = await conn.QueryAsync<StudentsViewModel>(sql_students, new { Offering_ID = offeringId });
             var ta = await conn.QueryFirstOrDefaultAsync<StudentsViewModel>(sql_ta, new { Offering_ID = offeringId });
@@ -457,10 +457,10 @@ namespace OmniFlex.Models.Repositories.Instructor
                             WHERE ASSIGNMENT_ID = :AssignmentId";
 
             using var conn = _factory.CreateConnection();
-            conn.Open();
+
             var assignment = await conn.QueryFirstOrDefaultAsync<InstructorAssignmentViewModel>(sql, new { assignmentId = assignmentId });
 
-            if (string.Equals(assignment?.DeliveryMode, "Physical", StringComparison.OrdinalIgnoreCase))
+            if (assignment is not null && string.Equals(assignment.DeliveryMode, "Physical", StringComparison.OrdinalIgnoreCase))
             {
                 var counts = await conn.QueryAsync<int>(sql_submission_count_onsite, new { AssignmentId = assignmentId });
                 assignment.SubmissionCount = counts.FirstOrDefault(); // Should only be one row, but we use FirstOrDefault to be safe
@@ -496,7 +496,7 @@ namespace OmniFlex.Models.Repositories.Instructor
                     ORDER BY U.LAST_NAME, U.FIRST_NAME, A.CREATED_AT";
 
             using var conn = _factory.CreateConnection();
-            conn.Open();
+
 
             var flatData = await conn.QueryAsync<GradeGridDTO>(sql, new { OfferingId = offeringId });
 
@@ -541,7 +541,7 @@ namespace OmniFlex.Models.Repositories.Instructor
         {
             // Use your factory instead of 'new OracleConnection'
             using var conn = _factory.CreateConnection();
-            conn.Open();
+
 
             using var trans = conn.BeginTransaction();
             try
@@ -591,7 +591,7 @@ namespace OmniFlex.Models.Repositories.Instructor
                 trans.Commit();
                 return entries;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 trans.Rollback();
                 throw; // Re-throw to handle error logging in the controller/middleware
@@ -600,7 +600,7 @@ namespace OmniFlex.Models.Repositories.Instructor
         public async Task<int> AddCoursePostAsync(CoursePost post)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+
 
             // Wrapped in BEGIN/END so the RETURNING clause works in Oracle
             string sql = @"
@@ -628,7 +628,7 @@ namespace OmniFlex.Models.Repositories.Instructor
         public async Task<int> AddAssignmentAsync(Assignment assignment)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+
 
             using var trans = conn.BeginTransaction();
             try
@@ -669,7 +669,7 @@ namespace OmniFlex.Models.Repositories.Instructor
                 trans.Commit();
                 return newId;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 trans.Rollback();
                 throw; // Re-throw to be caught by the Controller
@@ -679,7 +679,7 @@ namespace OmniFlex.Models.Repositories.Instructor
         public async Task<IEnumerable<Attendance>> BulkAddAttendanceRecordsAsync(List<Attendance> entries)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+
 
             using var trans = conn.BeginTransaction();
             try
@@ -723,7 +723,7 @@ namespace OmniFlex.Models.Repositories.Instructor
         public async Task<bool> UpdateAttendanceStatusAsync(int attendanceId, string status)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+
 
             using var trans = conn.BeginTransaction();
             try
@@ -761,7 +761,7 @@ namespace OmniFlex.Models.Repositories.Instructor
                 GreetingMessage = dashboard.GreetingMessage,
                 Profile = dashboard.Profile,
                 Summary = dashboard.WeeklySummary,
-                AssignedCourses = dashboard.Courses
+                AssignedCourses = dashboard.Courses ?? new List<InstructorCourseCard>()
             };
         }
 
@@ -842,7 +842,7 @@ namespace OmniFlex.Models.Repositories.Instructor
         {
             const string sql = @"SELECT ENROLL_ID FROM ENROLLMENTS WHERE STUDENT_ID = :StudentId AND OFFERING_ID = :OfferingId AND STATUS = 'Registered'";
             using var conn = _factory.CreateConnection();
-            conn.Open();
+
             var enrollId = await conn.QueryFirstOrDefaultAsync<int?>(sql, new { StudentId = studentId, OfferingId = offeringId });
             return enrollId ?? 0;
         }
@@ -855,7 +855,7 @@ namespace OmniFlex.Models.Repositories.Instructor
                             WHERE o.COURSE_ID = :CourseId AND o.SECTION_ID = :SectionId";
 
             using var conn = _factory.CreateConnection();
-            conn.Open();
+
             var enrollIds = await conn.QueryFirstOrDefaultAsync<List<int>>(sql, new { CourseId = courseId, SectionId = sectionId });
 
             return enrollIds ?? new List<int>();
@@ -865,7 +865,7 @@ namespace OmniFlex.Models.Repositories.Instructor
         public async Task<IEnumerable<AttendanceFlatDto>> GetAttendanceReportAsync(string courseId, string sectionId, string month)
         {
             using var conn = _factory.CreateConnection();
-            conn.Open();
+
 
             // Convert month name to number if necessary, e.g., "May" -> "05"
             string monthNum = DateTime.ParseExact(month, "MMMM", CultureInfo.InvariantCulture).ToString("mm");
@@ -923,7 +923,7 @@ namespace OmniFlex.Models.Repositories.Instructor
                         WHERE ASSIGNMENT_ID = :AssignmentId";
 
             using var conn = _factory.CreateConnection();
-            conn.Open();
+
 
             // 🔹 Get students + exam entries
             var students = (await conn.QueryAsync<OnsiteStudentRow>(
@@ -949,7 +949,7 @@ namespace OmniFlex.Models.Repositories.Instructor
         {
             const string sql = @"INSERT INTO EXAM_ENTRIES (ASSIGNMENT_ID, ENROLL_ID, TEACHER_ID, MARKS_OBTAINED, REMARKS, EXAM_DATE) VALUES (:AssignmentId, :EnrollmentId, :TeacherId, :MarksObtained, :Remarks, :ExamDate) RETURNING EXAM_ENTRY_ID";
             using var conn = _factory.CreateConnection();
-            conn.Open();
+
             var examEntryId = await conn.QueryFirstOrDefaultAsync<int>(sql, new { AssignmentId = assignmentId, EnrollmentId = enrollmentId, TeacherId = teacherId, MarksObtained = marksObtained, Remarks = remarks, ExamDate = ExamDate });
             return examEntryId;
         }
@@ -977,7 +977,7 @@ namespace OmniFlex.Models.Repositories.Instructor
                 WHERE USER_ID = :InstructorId AND ROLE = 'Instructor'";
 
             using var conn = _factory.CreateConnection();
-            conn.Open();
+
             var result = await conn.QueryFirstOrDefaultAsync<InstructorProfileInfo>(sql, new { InstructorId = instructorId });
             return result ?? new InstructorProfileInfo();
         }

@@ -98,3 +98,28 @@ $(function() {
     }
   });
 });
+
+<div class="col-lg-5 mb-3">
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-white border-0 py-3">
+        <h6 class="mb-0 fw-bold" style="font-family:Sora; color: #2d3436;">Quick Actions</h6>
+    </div>
+    <div class="card-body d-grid gap-2 pt-0">
+      <button class="btn btn-action btn-light-blue text-start py-3 mb-1" data-bs-toggle="modal" data-bs-target="#addCourseModal">
+        <i class="bi bi-plus-circle-fill me-2 text-primary"></i> Add New Course
+      </button>
+      
+      <a href="/admin/users" class="btn btn-action btn-light-purple text-start py-3 mb-1">
+        <i class="bi bi-person-plus-fill me-2 text-purple"></i> Add New User
+      </a>
+      
+      <a href="/admin/sections/assign" class="btn btn-action btn-light-orange text-start py-3 mb-1">
+        <i class="bi bi-diagram-3-fill me-2 text-warning"></i> Assign Instructor
+      </a>
+      
+      <a href="/admin/reports" class="btn btn-action btn-light-green text-start py-3">
+        <i class="bi bi-bar-chart-fill me-2 text-success"></i> Generate Reports
+      </a>
+    </div>
+  </div>
+</div>

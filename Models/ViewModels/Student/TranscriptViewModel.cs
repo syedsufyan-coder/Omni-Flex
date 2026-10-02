@@ -4,16 +4,16 @@ namespace OmniFlex.Models.ViewModels.Student
 {
     public class TranscriptViewModel
     {
-        public string StudentId { get; set; }
-        public string StudentName { get; set; }
-        public string DegreeProgram { get; set; }
+        public string StudentId { get; set; } = string.Empty;
+        public string StudentName { get; set; } = string.Empty;
+        public string DegreeProgram { get; set; } = string.Empty;
         public int Batch { get; set; }
         public List<SemesterSection>? Semesters { get; set; }
     }
 
     public class SemesterSection
     {
-        public string SemesterName { get; set; }
+        public string SemesterName { get; set; } = string.Empty;
         public decimal SemCrAtt { get; set; }
         public decimal SemCrErnd { get; set; }
         public decimal SGPA { get; set; }
@@ -23,14 +23,14 @@ namespace OmniFlex.Models.ViewModels.Student
 
     public class TranscriptCourseRow
     {
-        public string Code { get; set; }
-        public string CourseName { get; set; }
-        public string Section { get; set; }
+        public string Code { get; set; } = string.Empty;
+        public string CourseName { get; set; } = string.Empty;
+        public string Section { get; set; } = string.Empty;
         public int Batch { get; set; }
-        public string Degree { get; set; }
+        public string Degree { get; set; } = string.Empty;
         public decimal Credits { get; set; }
-        public string Grade { get; set; }
+        public string Grade { get; set; } = string.Empty;
         public decimal Points { get; set; }
-        public string Type { get; set; } // Core, Elective, etc.
+        public string Type { get; set; } = string.Empty; // Core, Elective, etc.
     }
 }
